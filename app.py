@@ -6,34 +6,35 @@ from fpdf import FPDF
 from io import BytesIO
 import base64
 
-# Load model and label encoder (ensure these files are in the same directory or accessible)
+# --- Load Model and Label Encoder ---
+# Ensure these files are in the same directory as app.py
 try:
     model = joblib.load("ppd_model_pipeline.pkl")
     le = joblib.load("label_encoder.pkl")
 except FileNotFoundError:
-    st.error("Model or label encoder file not found. Please ensure 'ppd_model_pipeline.pkl' and 'label_encoder.pkl' are in the same directory as 'app.py'.")
+    st.error("Error: Model or label encoder file not found. Please ensure 'ppd_model_pipeline.pkl' and 'label_encoder.pkl' are in the same directory as 'app.py'.")
     st.stop() # Stop the app if essential files are missing
 
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Function to encode image to base64
+# --- Helper Function for Base64 Image Encoding ---
 def get_base64_image(image_path):
+    """Encodes an image to a base64 string for embedding in CSS."""
     try:
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
     except FileNotFoundError:
-        st.warning(f"Background image not found at {image_path}. Please ensure '{image_path}' is in the same directory.")
-        return ""
+        st.warning(f"Background image not found at '{image_path}'. Ensure it's in the same directory as 'app.py'.")
+        return "" # Return empty string if not found, to avoid breaking CSS
 
-# Encode background image (assuming background.png is in the same directory)
-# Make sure you have a file named 'background.png' in the same directory as app.py
+# --- Dynamic CSS Generation with Background Image ---
+# Get base64 string for background image (assuming 'background.png' exists)
+# You need to have an image file named 'background.png' in your app's directory.
 bg_image_base64 = get_base64_image("background.png")
 
-# --- Custom CSS and Theming ---
-# Build the CSS string with the dynamic background image included
-# Use a triple curly brace {{{ }}} for the f-string to properly escape
-# the double curly braces {{ }} used in CSS for rules.
+# Define the custom CSS. Using f-string for dynamic injection of bg_image_base64.
+# Use triple curly braces {{{ }}} to escape literal curly braces {{ }} in CSS rules.
 custom_css = f"""
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
@@ -79,6 +80,8 @@ h1, h2, h3, h4, h5, h6 {{
     padding: 10px 15px; /* Add padding for better clickable area */
     margin: 5px 0; /* Add vertical margin between items */
     border-radius: 5px; /* Slightly rounded corners */
+    text-decoration: none; /* Remove underline from links */
+    color: #FAFAFA; /* Default text color for nav items */
 }}
 
 [data-testid="stSidebarNav"] li a:hover {{
@@ -92,6 +95,7 @@ h1, h2, h3, h4, h5, h6 {{
     background-color: #E84C3D; /* Vibrant red for selected item */
     color: white; /* White text for selected item */
     font-weight: bold;
+    transform: translateX(0px); /* Keep active item stationary */
 }}
 
 
@@ -197,6 +201,7 @@ a[download]:hover {{
 }}
 
 /* Blue background animation (original, slightly modified for consistency) */
+/* This animation is on the overall app background, not directly related to sidebar slowness */
 @keyframes fadeBg {{
     0% {{ background-color: #0A1128; }}
     50% {{ background-color: #0A1128; }}
@@ -205,24 +210,42 @@ a[download]:hover {{
 </style>
 """
 
-# Apply the custom CSS
-st.markdown(custom_css, unsafe_allow_html=True)
+st.markdown(custom_css, unsafe_allow_html=True) # Apply the custom CSS
 
-
-# Sidebar navigation
+# --- Session State Initialization ---
+# Initialize session state variables once at the beginning of the script
 if "page" not in st.session_state:
     st.session_state.page = "Home"
+if "question_index" not in st.session_state:
+    st.session_state.question_index = 0
+if "responses" not in st.session_state:
+    st.session_state.responses = []
+if "age" not in st.session_state:
+    st.session_state.age = 25
+if "support" not in st.session_state:
+    st.session_state.support = "Medium"
+if "name" not in st.session_state:
+    st.session_state.name = ""
+if "place" not in st.session_state:
+    st.session_state.place = ""
+# Flag for feedback submission to prevent re-displaying success message on rerun
+if "feedback_submitted" not in st.session_state:
+    st.session_state.feedback_submitted = False
 
-# Changed st.session_state.page = st.sidebar.radio to use on_change callback
+
+# --- Sidebar Navigation ---
+# Use on_change callback to update st.session_state.page
 st.sidebar.radio(
     "Navigate",
     ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
     index=["Home", "Take Test", "Result Explanation", "Feedback", "Resources"].index(st.session_state.page),
-    key="menu",
+    key="menu", # This key holds the selected value
     on_change=lambda: setattr(st.session_state, 'page', st.session_state.menu) # Update page state on radio change
 )
 
-menu = st.session_state.page
+menu = st.session_state.page # Get the current page from session state
+
+# --- Main Content Rendering ---
 
 # HOME
 if menu == "Home":
@@ -233,42 +256,30 @@ if menu == "Home":
     </div>
     """, unsafe_allow_html=True)
 
-    # Move the button call outside of the markdown block to control its placement
-    # It will now render below the markdown content.
-    st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True) # Center the button
-    if st.button("Start Test", key="home_start_button"): # Add a key to the button
+    # Place the button below the markdown text, centered
+    st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
+    if st.button("Start Test", key="home_start_button"): # Added key to prevent warning if multiple buttons have same label
         st.session_state.page = "Take Test"
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
-
 
 # TEST PAGE
 elif menu == "Take Test":
     st.header("Questionnaire")
 
-    for var, default in {
-        'question_index': 0,
-        'responses': [],
-        'age': 25,
-        'support': "Medium",
-        'name': "",
-        'place': ""
-    }.items():
-        if var not in st.session_state:
-            st.session_state[var] = default
-
     idx = st.session_state.question_index
 
     if idx == 0:
-        st.session_state.name = st.text_input("First Name", value=st.session_state.name)
-        st.session_state.place = st.text_input("Your Place", value=st.session_state.place)
-        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age)
+        st.session_state.name = st.text_input("First Name", value=st.session_state.name, key="first_name_input")
+        st.session_state.place = st.text_input("Your Place", value=st.session_state.place, key="place_input")
+        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age, key="age_slider")
         st.session_state.support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
-                                                index=["High", "Medium", "Low"].index(st.session_state.support))
+                                                index=["High", "Medium", "Low"].index(st.session_state.support),
+                                                key="support_selectbox")
 
         st.markdown("<br>", unsafe_allow_html=True) # Add some space
 
-        if st.button("Start Questionnaire"):
+        if st.button("Start Questionnaire", key="start_questionnaire_button"):
             if st.session_state.name.strip() and st.session_state.place.strip():
                 st.session_state.question_index += 1
                 st.rerun()
@@ -302,19 +313,34 @@ elif menu == "Take Test":
     if 1 <= idx <= 10:
         st.markdown(f"**Question {idx} of 10**")
         q_text, options = q_responses[idx - 1]
-        choice = st.radio(f"{q_text}", list(options.keys()), key=f"q{idx}")
+        # Use st.session_state.responses[idx-1] for default if navigating back
+        # Ensure that the length of responses is at least idx, otherwise, use the first option as default
+        default_index = list(options.values()).index(st.session_state.responses[idx-1]) if len(st.session_state.responses) >= idx else 0
+
+        choice = st.radio(f"{q_text}", list(options.keys()), key=f"q_radio_{idx}", index=default_index)
+
         st.markdown("<br>", unsafe_allow_html=True) # Add some space
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Back") and idx > 1:
-                st.session_state.question_index -= 1
-                if st.session_state.responses: # Ensure responses is not empty before popping
-                    st.session_state.responses.pop()
-                st.rerun()
+            if st.button("Back", key=f"back_button_{idx}"):
+                if idx > 1:
+                    st.session_state.question_index -= 1
+                    # Only pop if there are responses to remove for the current question
+                    if len(st.session_state.responses) >= idx:
+                        st.session_state.responses.pop()
+                    st.rerun()
+                else: # If on first question, go back to info input
+                    st.session_state.question_index = 0
+                    st.rerun()
         with col2:
-            if st.button("Next"):
-                st.session_state.responses.append(options[choice])
+            if st.button("Next", key=f"next_button_{idx}"):
+                # Update the response for the current question before moving to next
+                if len(st.session_state.responses) < idx: # If it's a new question
+                    st.session_state.responses.append(options[choice])
+                else: # If navigating back and then forward (updating existing response)
+                    st.session_state.responses[idx-1] = options[choice]
+
                 st.session_state.question_index += 1
                 st.rerun()
 
@@ -326,10 +352,10 @@ elif menu == "Take Test":
         q_values = st.session_state.responses
 
         if len(q_values) != 10: # Ensure all 10 questions are answered
-            st.error("It seems some questions were skipped. Please go back and complete the questionnaire.")
-            if st.button("Go Back to Questions"):
+            st.error("It seems some questions were skipped or not completed. Please go back and complete the questionnaire.")
+            if st.button("Go Back to Questions", key="go_back_questions"):
                 st.session_state.question_index = 1 # Reset to the first question
-                st.session_state.responses = [] # Clear responses
+                # Don't clear responses if going back, allow user to review/correct
                 st.rerun()
             st.stop()
 
@@ -403,7 +429,8 @@ elif menu == "Take Test":
         pdf.cell(200, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
         pdf.ln(10) # Line break before note
         pdf.set_font("Arial", 'I', size=10) # Italic for the note
-        pdf.cell(200, 10, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)", ln=True)
+        pdf.multi_cell(0, 5, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)")
+
 
         # Add questions and answers to PDF
         pdf.ln(10)
@@ -411,22 +438,32 @@ elif menu == "Take Test":
         pdf.cell(200, 10, txt="Your Responses:", ln=True)
         pdf.set_font("Arial", size=10)
         for i, (q_text, options) in enumerate(q_responses):
-            selected_option_value = q_values[i]
-            selected_option_text = [k for k, v in options.items() if v == selected_option_value][0]
-            pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Your Answer: {selected_option_text} (Score: {selected_option_value})")
-            pdf.ln(2) # Small space between questions
+            if i < len(q_values): # Ensure we don't go out of bounds for q_values
+                selected_option_value = q_values[i]
+                selected_option_text = [k for k, v in options.items() if v == selected_option_value][0]
+                pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Your Answer: {selected_option_text} (Score: {selected_option_value})")
+                pdf.ln(2) # Small space between questions
+            else:
+                pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Answer: Not provided (Error in previous questions)")
+                pdf.ln(2)
+
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer)
+        pdf.output(pdf_buffer, dest='S') # Crucial fix: dest='S' for outputting to BytesIO
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True) # Add some space
-        # Changed button label from "Restart" to "Restart Test" for clarity
-        if st.button("Restart Test"):
-            for key in ['question_index', 'responses', 'age', 'support', 'name', 'place']:
-                st.session_state.pop(key, None)
+        if st.button("Restart Test", key="restart_test_button"):
+            # Reset all relevant session state variables
+            st.session_state.question_index = 0
+            st.session_state.responses = []
+            st.session_state.age = 25
+            st.session_state.support = "Medium"
+            st.session_state.name = ""
+            st.session_state.place = ""
+            st.session_state.feedback_submitted = False # Reset feedback flag
             st.session_state.page = "Home" # Redirect to home on restart
             st.rerun()
 
@@ -448,17 +485,29 @@ elif menu == "Result Explanation":
 # FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
-    name = st.text_input("Your Name (Optional)")
-    message = st.text_area("Your Feedback", height=150)
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("Submit Feedback"):
-        if message.strip():
-            st.success("Thank you for your valuable feedback! We appreciate your input.")
-            # In a real application, you would save this feedback (e.g., to a database, file, or email).
-            st.session_state.feedback_submitted = True # A flag to prevent resubmission on rerun
-        else:
-            st.warning("Please enter some feedback before submitting.")
+    # Reset feedback_submitted flag if user navigates away and comes back, or before showing form
+    if st.session_state.page == "Feedback" and st.session_state.feedback_submitted:
+        st.session_state.feedback_submitted = False # Allows resubmission after new input
 
+    # Only show the form if feedback hasn't just been submitted in this rerun
+    if not st.session_state.feedback_submitted:
+        feedback_name = st.text_input("Your Name (Optional)", key="feedback_name_input")
+        feedback_message = st.text_area("Your Feedback", height=150, key="feedback_message_input")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        if st.button("Submit Feedback", key="submit_feedback_button"):
+            if feedback_message.strip():
+                st.success("Thank you for your valuable feedback! We appreciate your input.")
+                st.session_state.feedback_submitted = True # Set flag after successful submission
+                st.rerun() # Rerun to clear form and display success message
+            else:
+                st.warning("Please enter some feedback before submitting.")
+    else:
+        st.success("Your feedback has been submitted. Thank you!")
+        # You could also offer a "Submit More Feedback" button here if desired
+        if st.button("Submit More Feedback", key="submit_more_feedback"):
+            st.session_state.feedback_submitted = False
+            st.rerun()
 
 # RESOURCES
 elif menu == "Resources":
