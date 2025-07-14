@@ -17,70 +17,84 @@ except FileNotFoundError:
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
+# Function to encode image to base64
+def get_base64_image(image_path):
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    except FileNotFoundError:
+        st.warning(f"Background image not found at {image_path}. Please ensure '{image_path}' is in the same directory.")
+        return ""
+
+# Encode background image (assuming background.png is in the same directory)
+# Make sure you have a file named 'background.png' in the same directory as app.py
+bg_image_base64 = get_base64_image("background.png")
+
 # --- Custom CSS and Theming ---
-st.markdown("""
+# Build the CSS string with the dynamic background image included
+custom_css = f"""
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
-.stApp {
+.stApp {{
     background-color: #0A1128; /* Deep dark blue, similar to vdigtech.com */
     color: #FAFAFA; /* Light off-white for general text */
     font-family: 'Arial', sans-serif; /* A clear, modern sans-serif font */
-}
+}}
 
 /* Header/Title Styling */
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3, h4, h5, h6 {{
     color: #FAFAFA; /* Ensure all headers are light */
     text-align: center; /* Center align main headers for a grander feel */
-}
+}}
 
 /* Specific Home Page Title */
-.home-title {
+.home-title {{
     font-size: 3.5em;
     color: #FAFAFA;
     text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Subtle shadow for depth */
-}
+}}
 
-.home-subtitle {
+.home-subtitle {{
     font-size: 1.6em;
     color: #E0E0E0; /* Slightly dimmer than main text */
     margin-top: -10px; /* Pull subtitle closer to title */
-}
+}}
 
 /* Sidebar Styling - Add background image */
-[data-testid="stSidebar"] {
+[data-testid="stSidebar"] {{
     background-color: #1C2C5B; /* Slightly lighter blue for sidebar */
     color: #FAFAFA;
     padding-top: 30px; /* Add some padding to the top */
-    background-image: url('data:image/png;base64,{bg_image_base64}'); /* Placeholder for base64 image */
+    background-image: url('data:image/png;base64,{bg_image_base64}'); /* This line adds your image */
     background-size: cover; /* Cover the entire sidebar area */
     background-position: center; /* Center the image */
     background-repeat: no-repeat; /* Do not repeat the image */
-}
+}}
 
 /* Sidebar Navigation Items Animation */
-[data-testid="stSidebarNav"] li a {
+[data-testid="stSidebarNav"] li a {{
     transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease; /* Smooth transition */
     padding: 10px 15px; /* Add padding for better clickable area */
     margin: 5px 0; /* Add vertical margin between items */
     border-radius: 5px; /* Slightly rounded corners */
-}
+}}
 
-[data-testid="stSidebarNav"] li a:hover {
+[data-testid="stSidebarNav"] li a:hover {{
     background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateX(5px); /* Slide slightly to the right on hover */
-}
+}}
 
 /* Active (selected) navigation item */
-[data-testid="stSidebarNav"] li a[aria-current="page"] {
+[data-testid="stSidebarNav"] li a[aria-current="page"] {{
     background-color: #E84C3D; /* Vibrant red for selected item */
     color: white; /* White text for selected item */
     font-weight: bold;
-}
+}}
 
 
 /* Buttons Styling - General */
-div.stButton > button:first-child {
+div.stButton > button:first-child {{
     background-color: #E84C3D; /* A vibrant red, similar to vdigtech.com's accents */
     color: white;
     border: none;
@@ -91,74 +105,74 @@ div.stButton > button:first-child {
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     margin: 10px 5px; /* Add some margin around buttons */
-}
+}}
 
-div.stButton > button:first-child:hover {
+div.stButton > button:first-child:hover {{
     background-color: #C23A2C; /* Darker red on hover */
     transform: translateY(-2px); /* Slight lift on hover */
-}
+}}
 
 /* Input Fields and Selectboxes */
 .stTextInput > div > div > input,
 .stSelectbox > div > div > div > div,
 .stNumberInput > div > div > input,
-.stTextArea > div > div > textarea {
+.stTextArea > div > div > textarea {{
     background-color: #2D416B; /* Darker input fields */
     color: #FAFAFA;
     border: 1px solid #4A6B9C; /* Subtle border */
     border-radius: 5px;
     padding: 10px;
-}
-.stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {
+}}
+.stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {{
     color: #FAFAFA; /* Ensure labels are light */
-}
+}}
 
 /* Radio buttons (main content) */
-.stRadio > label {
+.stRadio > label {{
     color: #FAFAFA; /* Ensure radio labels are light */
-}
+}}
 
 /* Success, Info, Warning messages */
-div[data-testid="stAlert"] {
+div[data-testid="stAlert"] {{
     border-radius: 8px;
     padding: 15px;
-}
-div[data-testid="stAlert"].success {
+}}
+div[data-testid="stAlert"].success {{
     background-color: #28a74520; /* Light green transparent background */
     color: #28a745; /* Green text */
     border-left: 5px solid #28a745;
-}
-div[data-testid="stAlert"].info {
+}}
+div[data-testid="stAlert"].info {{
     background-color: #17a2b820; /* Light blue transparent background */
     color: #17a2b8; /* Blue text */
     border-left: 5px solid #17a2b8;
-}
-div[data-testid="stAlert"].warning {
+}}
+div[data-testid="stAlert"].warning {{
     background-color: #ffc10720; /* Light yellow transparent background */
     color: #ffc107; /* Yellow text */
     border-left: 5px solid #ffc107;
-}
+}}
 
 /* Table styling in Result Explanation */
-.stMarkdown table {
+.stMarkdown table {{
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
     background-color: #1C2C5B; /* Table background matching sidebar */
     color: #FAFAFA;
-}
-.stMarkdown th, .stMarkdown td {
+}}
+.stMarkdown th, .stMarkdown td {{
     border: 1px solid #4A6B9C; /* Table cell borders */
     padding: 10px;
     text-align: left;
-}
-.stMarkdown th {
+}}
+.stMarkdown th {{
     background-color: #2D416B; /* Table header background */
     font-weight: bold;
-}
+}}
 
 /* PDF Download Link Styling */
-a[download] {
+a[download] {{
     display: inline-block;
     background-color: #17A2B8; /* A nice blue for download link */
     color: white;
@@ -167,43 +181,30 @@ a[download] {
     text-decoration: none;
     margin-top: 20px;
     transition: background-color 0.3s ease;
-}
-a[download]:hover {
+}}
+a[download]:hover {{
     background-color: #138496; /* Darker blue on hover */
-}
+}}
 
 /* Custom note styling */
-.custom-note {
+.custom-note {{
     color: #ccc;
     font-style: italic;
     text-align: center;
     margin-top: 20px;
-}
+}}
 
 /* Blue background animation (original, slightly modified for consistency) */
-@keyframes fadeBg {
-    0% { background-color: #0A1128; }
-    50% { background-color: #0A1128; }
-    100% { background-color: #0A1128; }
-}
+@keyframes fadeBg {{
+    0% {{ background-color: #0A1128; }}
+    50% {{ background-color: #0A1128; }}
+    100% {{ background-color: #0A1128; }}
+}}
 </style>
-""", unsafe_allow_html=True)
+"""
 
-# Function to encode image to base64
-def get_base64_image(image_path):
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-    except FileNotFoundError:
-        st.warning(f"Background image not found at {image_path}. Please ensure 'background.png' is in the same directory.")
-        return ""
-
-# Encode background image (assuming background.png is in the same directory)
-bg_image_base64 = get_base64_image("background.png")
-
-# Replace placeholder in CSS with actual base64 image data
-css_with_image = st.empty()._repr_html_().replace('{bg_image_base64}', bg_image_base64)
-st.markdown(css_with_image, unsafe_allow_html=True)
+# Apply the custom CSS
+st.markdown(custom_css, unsafe_allow_html=True)
 
 
 # Sidebar navigation
