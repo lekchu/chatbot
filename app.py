@@ -211,8 +211,8 @@ elif menu == "🔗 Resources":
     - [Postpartum Support International](https://www.postpartum.net/)
     """)
 
-    else:
-        return "I'm still learning! Please try asking something else related to postpartum depression or the app."
+else:
+    return "I'm still learning! Please try asking something else related to postpartum depression or the app."
 
     if user_input:
         st.markdown(f"**You:** {user_input}")
