@@ -214,7 +214,7 @@ elif menu == "🔗 Resources":
 else:
      return "I'm still learning! Please try asking something else related to postpartum depression or the app."
 
-    if user_input:
+if user_input:
         st.markdown(f"**You:** {user_input}")
         response = get_bot_reply(user_input)
         st.markdown(f"**Bot:** {response}")
