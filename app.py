@@ -5,207 +5,456 @@ import plotly.graph_objects as go
 from fpdf import FPDF
 from io import BytesIO
 import base64
-from datetime import datetime
 
-# Load model and label encoder
-model = joblib.load("ppd_model_pipeline.pkl")
-le = joblib.load("label_encoder.pkl")
+# Load model and label encoder (ensure these files are in the same directory or accessible)
+try:
+    model = joblib.load("ppd_model_pipeline.pkl")
+    le = joblib.load("label_encoder.pkl")
+except FileNotFoundError:
+    st.error("Model or label encoder file not found. Please ensure 'ppd_model_pipeline.pkl' and 'label_encoder.pkl' are in the same directory as 'app.py'.")
+    st.stop() # Stop the app if essential files are missing
 
-# Page configuration
-st.set_page_config(page_title="Postpartum Depression Risk Predictor", page_icon="🧠", layout="wide")
+# --- Page Configuration ---
+st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Inject custom CSS to mimic professional business site
+# --- Custom CSS and Theming ---
+# This CSS aims to mimic some of the modern aesthetic of vdigtech.com,
+# focusing on dark background, light text, and subtle highlights.
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+<style>
+/* Global App Styling - Dark Blue/Black Theme */
+.stApp {
+    background-color: #0A1128; /* Deep dark blue, similar to vdigtech.com */
+    color: #FAFAFA; /* Light off-white for general text */
+    font-family: 'Arial', sans-serif; /* A clear, modern sans-serif font */
+}
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        background: #ffffff;
-        color: #333333;
-    }
-    .main-header {
-        background: linear-gradient(to right, #007bff, #00c6ff);
-        color: white;
-        padding: 4rem 2rem;
-        border-radius: 0.75rem;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-    .main-header h1 {
-        font-size: 3rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    .main-header p {
-        font-size: 1.25rem;
-        font-weight: 400;
-    }
-    .stButton>button {
-        background-color: #007bff;
-        color: white;
-        border-radius: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        margin-top: 1rem;
-    }
-    .stButton>button:hover {
-        background-color: #0056b3;
-    }
-    .section {
-        padding: 2rem 1rem;
-        margin: 0 auto;
-        max-width: 1000px;
-    }
-    .card {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-    </style>
+/* Header/Title Styling */
+h1, h2, h3, h4, h5, h6 {
+    color: #FAFAFA; /* Ensure all headers are light */
+    text-align: center; /* Center align main headers for a grander feel */
+}
+
+/* Specific Home Page Title */
+.home-title {
+    font-size: 3.5em;
+    color: #FAFAFA;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Subtle shadow for depth */
+}
+
+.home-subtitle {
+    font-size: 1.6em;
+    color: #E0E0E0; /* Slightly dimmer than main text */
+    margin-top: -10px; /* Pull subtitle closer to title */
+}
+
+/* Sidebar Styling */
+.stSidebar {
+    background-color: #1C2C5B; /* Slightly lighter blue for sidebar */
+    color: #FAFAFA;
+    padding-top: 30px; /* Add some padding to the top */
+}
+
+/* Radio buttons in sidebar */
+.stSidebar .stRadio > label {
+    color: #FAFAFA !important; /* Ensure sidebar radio labels are light */
+    font-weight: bold;
+    padding: 10px 0;
+}
+
+/* Buttons Styling - General */
+div.stButton > button:first-child {
+    background-color: #E84C3D; /* A vibrant red, similar to vdigtech.com's accents */
+    color: white;
+    border: none;
+    border-radius: 8px; /* Rounded corners for modern look */
+    padding: 10px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin: 10px 5px; /* Add some margin around buttons */
+}
+
+div.stButton > button:first-child:hover {
+    background-color: #C23A2C; /* Darker red on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+/* Input Fields and Selectboxes */
+.stTextInput > div > div > input,
+.stSelectbox > div > div > div > div,
+.stNumberInput > div > div > input,
+.stTextArea > div > div > textarea {
+    background-color: #2D416B; /* Darker input fields */
+    color: #FAFAFA;
+    border: 1px solid #4A6B9C; /* Subtle border */
+    border-radius: 5px;
+    padding: 10px;
+}
+.stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {
+    color: #FAFAFA; /* Ensure labels are light */
+}
+
+/* Radio buttons (main content) */
+.stRadio > label {
+    color: #FAFAFA; /* Ensure radio labels are light */
+}
+
+/* Success, Info, Warning messages */
+.stAlert {
+    border-radius: 8px;
+    padding: 15px;
+}
+.stAlert.success {
+    background-color: #28a74520; /* Light green transparent background */
+    color: #28a745; /* Green text */
+    border-left: 5px solid #28a745;
+}
+.stAlert.info {
+    background-color: #17a2b820; /* Light blue transparent background */
+    color: #17a2b8; /* Blue text */
+    border-left: 5px solid #17a2b8;
+}
+.stAlert.warning {
+    background-color: #ffc10720; /* Light yellow transparent background */
+    color: #ffc107; /* Yellow text */
+    border-left: 5px solid #ffc107;
+}
+
+/* Table styling in Result Explanation */
+.stMarkdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #1C2C5B; /* Table background matching sidebar */
+    color: #FAFAFA;
+}
+.stMarkdown th, .stMarkdown td {
+    border: 1px solid #4A6B9C; /* Table cell borders */
+    padding: 10px;
+    text-align: left;
+}
+.stMarkdown th {
+    background-color: #2D416B; /* Table header background */
+    font-weight: bold;
+}
+
+/* PDF Download Link Styling */
+a[download] {
+    display: inline-block;
+    background-color: #17A2B8; /* A nice blue for download link */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+a[download]:hover {
+    background-color: #138496; /* Darker blue on hover */
+}
+
+/* Custom note styling */
+.custom-note {
+    color: #ccc;
+    font-style: italic;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Blue background animation (original, slightly modified for consistency) */
+/* The animation itself is simple, but the background color is now part of the theme */
+@keyframes fadeBg {
+    0% { background-color: #0A1128; }
+    50% { background-color: #0A1128; }
+    100% { background-color: #0A1128; }
+}
+</style>
 """, unsafe_allow_html=True)
 
-# Navigation
-menu = st.sidebar.radio("Navigate", ["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📩 Feedback", "🔗 Resources"])
 
-if menu == "🏠 Home":
-    st.markdown("""
-        <div class="main-header">
-            <h1>Postpartum Depression Risk Predictor</h1>
-            <p>Empowering maternal mental health through intelligent assessment</p>
-        </div>
-    """, unsafe_allow_html=True)
+# Sidebar navigation
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
 
-    st.image("https://cdn.pixabay.com/photo/2020/03/27/13/51/mother-4972506_1280.jpg", use_column_width=True)
+st.sidebar.radio(
+    "Navigate",
+    ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
+    index=["Home", "Take Test", "Result Explanation", "Feedback", "Resources"].index(st.session_state.page),
+    key="menu",
+    on_change=lambda: setattr(st.session_state, 'page', st.session_state.menu) # Update page state on radio change
+)
 
-    st.markdown("""
-    <div class="section">
-        <div class="card">
-            <h3>Why Use This Tool?</h3>
-            <p>This AI-powered platform uses the globally validated EPDS (Edinburgh Postnatal Depression Scale) questionnaire to evaluate potential risk levels of postpartum depression. Whether you're a new mother or a healthcare provider, this tool provides immediate insights based on your responses.</p>
-        </div>
-        <div class="card">
-            <h3>How It Works</h3>
-            <ol>
-                <li>Answer a 10-question assessment</li>
-                <li>Get instant risk evaluation</li>
-                <li>Download a report or share it with a professional</li>
-            </ol>
-        </div>
-        <div class="card">
-            <h3>Confidential & Secure</h3>
-            <p>Your answers are not stored anywhere. This is a safe and private tool for awareness and screening.</p>
+menu = st.session_state.page
+
+# HOME
+if menu == "Home":
+    st.markdown(f"""
+    <div style="text-align: center; padding: 60px 20px;">
+        <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
+        <h3 class="home-subtitle">Empowering maternal health through smart technology</h3>
+        <div style="margin-top: 40px;">
+            {st.button("Start Test", key="home_start_button")._repr_html_()}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    if st.button("🧠 Take the Assessment Now"):
-        st.session_state.page = "📝 Take Test"
-        st.experimental_rerun()
+    # Streamlit buttons need to be rendered directly for their functionality
+    # The markdown above is for styling, we handle the button click separately.
+    if st.session_state.get("home_start_button"):
+        st.session_state.page = "Take Test"
+        st.rerun()
 
-elif menu == "📝 Take Test":
-    st.title("📝 Postpartum Depression Questionnaire")
-    name = st.text_input("Full Name")
-    age = st.slider("Your Age", 18, 45, 25)
-    location = st.text_input("Your Location")
-    support = st.selectbox("How would you describe your family support?", ["High", "Medium", "Low"])
 
-    questions = [
-        ("I have been able to laugh and see the funny side of things.", ["As much as I always could", "Not quite so much now", "Definitely not so much now", "Not at all"]),
-        ("I have looked forward with enjoyment to things", ["As much as I ever did", "Rather less than I used to", "Definitely less than I used to", "Hardly at all"]),
-        ("I have blamed myself unnecessarily when things went wrong", ["No, never", "Not very often", "Yes, some of the time", "Yes, most of the time"]),
-        ("I have been anxious or worried for no good reason", ["No, not at all", "Hardly ever", "Yes, sometimes", "Yes, very often"]),
-        ("I have felt scared or panicky for no very good reason", ["No, not at all", "No, not much", "Yes, sometimes", "Yes, quite a lot"]),
-        ("Things have been getting on top of me", ["No, I have been coping as well as ever", "No, most of the time I have coped quite well", "Yes, sometimes I haven't been coping as well as usual", "Yes, most of the time I haven't been able to cope at all"]),
-        ("I have been so unhappy that I have had difficulty sleeping", ["No, not at all", "Not very often", "Yes, sometimes", "Yes, most of the time"]),
-        ("I have felt sad or miserable", ["No, not at all", "Not very often", "Yes, quite often", "Yes, most of the time"]),
-        ("I have been so unhappy that I have been crying", ["No, never", "Only occasionally", "Yes, quite often", "Yes, most of the time"]),
-        ("The thought of harming myself has occurred to me", ["Never", "Hardly ever", "Sometimes", "Yes, quite often"]),
+# TEST PAGE
+elif menu == "Take Test":
+    st.header("Questionnaire")
+
+    for var, default in {
+        'question_index': 0,
+        'responses': [],
+        'age': 25,
+        'support': "Medium",
+        'name': "",
+        'place': ""
+    }.items():
+        if var not in st.session_state:
+            st.session_state[var] = default
+
+    idx = st.session_state.question_index
+
+    if idx == 0:
+        st.session_state.name = st.text_input("First Name", value=st.session_state.name)
+        st.session_state.place = st.text_input("Your Place", value=st.session_state.place)
+        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age)
+        st.session_state.support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
+                                                index=["High", "Medium", "Low"].index(st.session_state.support))
+
+        st.markdown("<br>", unsafe_allow_html=True) # Add some space
+
+        if st.button("Start Questionnaire"):
+            if st.session_state.name.strip() and st.session_state.place.strip():
+                st.session_state.question_index += 1
+                st.rerun()
+            else:
+                st.warning("Please enter your name and place before starting.")
+
+    q_responses = [
+        ("I have been able to laugh and see the funny side of things.",
+         {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
+        ("I have looked forward with enjoyment to things",
+         {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}),
+        ("I have blamed myself unnecessarily when things went wrong",
+         {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}),
+        ("I have been anxious or worried for no good reason",
+         {"No, not at all": 0, "Hardly ever": 1, "Yes, sometimes": 2, "Yes, very often": 3}),
+        ("I have felt scared or panicky for no very good reason",
+         {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}),
+        ("Things have been getting on top of me",
+         {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
+          "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}),
+        ("I have been so unhappy that I have had difficulty sleeping",
+         {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}),
+        ("I have felt sad or miserable",
+         {"No, not at all": 0, "Not very often": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+        ("I have been so unhappy that I have been crying",
+         {"No, never": 0, "Only occasionally": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+        ("The thought of harming myself has occurred to me",
+         {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
     ]
 
-    mappings = [3, 2, 1, 0]  # Used to reverse-score answers
-    scores = []
+    if 1 <= idx <= 10:
+        st.markdown(f"**Question {idx} of 10**")
+        q_text, options = q_responses[idx - 1]
+        choice = st.radio(f"{q_text}", list(options.keys()), key=f"q{idx}")
+        st.markdown("<br>", unsafe_allow_html=True) # Add some space
 
-    for i, (question, options) in enumerate(questions):
-        answer = st.radio(f"Q{i+1}. {question}", options, key=f"q{i}")
-        scores.append(mappings[options.index(answer)])
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Back") and idx > 1:
+                st.session_state.question_index -= 1
+                if st.session_state.responses: # Ensure responses is not empty before popping
+                    st.session_state.responses.pop()
+                st.rerun()
+        with col2:
+            if st.button("Next"):
+                st.session_state.responses.append(options[choice])
+                st.session_state.question_index += 1
+                st.rerun()
 
-    if st.button("Predict Risk"):
-        score_sum = sum(scores)
-        data = pd.DataFrame([{  # Name removed from model input
+    elif idx == 11:
+        name = st.session_state.name
+        place = st.session_state.place
+        age = st.session_state.age
+        support = st.session_state.support
+        q_values = st.session_state.responses
+
+        if len(q_values) != 10: # Ensure all 10 questions are answered
+            st.error("It seems some questions were skipped. Please go back and complete the questionnaire.")
+            if st.button("Go Back to Questions"):
+                st.session_state.question_index = 1 # Reset to the first question
+                st.session_state.responses = [] # Clear responses
+                st.rerun()
+            st.stop()
+
+
+        score = sum(q_values)
+
+        input_df = pd.DataFrame([{
+            "Name": name,
             "Age": age,
             "FamilySupport": support,
-            **{f"Q{i+1}": scores[i] for i in range(10)},
-            "EPDS_Score": score_sum
+            **{f"Q{i+1}": val for i, val in enumerate(q_values)},
+            "EPDS_Score": score
         }])
 
-        pred = model.predict(data)[0]
-        label = le.inverse_transform([pred])[0]
+        # Need to handle categorical features for prediction
+        # Assuming 'FamilySupport' is the only categorical feature for the model
+        # The model pipeline should handle encoding. If it expects encoded values,
+        # you need to ensure the pipeline correctly transforms "High", "Medium", "Low".
+        # If the model itself was trained on the raw strings, then it's fine.
+        # Given your existing code, assuming the model pipeline handles 'FamilySupport' as is.
+        # If 'FamilySupport' needs to be encoded before passing to model.predict, it would look like:
+        # support_encoded = le.transform([support])[0] # Assuming le is trained on support levels
+        # input_df['FamilySupport'] = support_encoded
 
-        st.success(f"{name}, your predicted Postpartum Depression Risk is: {label}")
-        st.write(f"**Total EPDS Score:** {score_sum}")
 
-        # Gauge chart
+        pred_encoded = model.predict(input_df.drop(columns=["Name"]))[0]
+        pred_label = le.inverse_transform([pred_encoded])[0]
+
+        st.markdown(f"<h2 style='text-align: center; color: #E84C3D;'>{name}, Your PPD Risk Prediction:</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center; color: #FAFAFA;'>{pred_label}</h3>", unsafe_allow_html=True)
+        st.markdown("<p class='custom-note'>Note: This screening result is generated based on the EPDS – Edinburgh Postnatal Depression Scale, a globally validated tool for postpartum depression assessment.</p>", unsafe_allow_html=True)
+
+        # Gauge chart with improved colors and a more central look
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
-            value=pred,
-            number={"suffix": " / 3"},
+            value=pred_encoded,
+            number={"suffix": " / 3", "font_color": "#FAFAFA"}, # White number
             gauge={
-                "axis": {"range": [0, 3]},
-                "bar": {"color": "deeppink"},
+                "axis": {"range": [0, 3], "tickwidth": 1, "tickcolor": "#FAFAFA"},
+                "bar": {"color": "#E84C3D"}, # Red/pink bar
                 "steps": [
-                    {"range": [0, 1], "color": "lightgreen"},
-                    {"range": [1, 2], "color": "gold"},
-                    {"range": [2, 3], "color": "red"}
-                ]
+                    {"range": [0, 1], "color": "#28a745"}, # Green for Mild
+                    {"range": [1, 2], "color": "#ffc107"}, # Yellow for Moderate
+                    {"range": [2, 3], "color": "#dc3545"}  # Red for Severe/Profound
+                ],
+                "threshold": {
+                    "line": {"color": "white", "width": 4},
+                    "thickness": 0.75,
+                    "value": pred_encoded # Show current value on threshold
+                }
             },
-            title={"text": "Risk Level"}
+            title={"text": "<span style='color:#FAFAFA;'>Risk Level</span>"} # White title
         ))
+        fig.update_layout(
+            paper_bgcolor="#0A1128", # Background of the chart area
+            font_color="#FAFAFA" # Default font color for the chart
+        )
         st.plotly_chart(fig, use_container_width=True)
+
+        tips = {
+            "Mild": "- Stay active\n- Eat well\n- Talk to someone\n- Practice self-care",
+            "Moderate": "- Monitor symptoms\n- Join a group\n- Share with family\n- Avoid isolation",
+            "Severe": "- Contact a therapist\n- Alert family\n- Prioritize mental health\n- Reduce stressors",
+            "Profound": "- Seek urgent psychiatric help\n- Talk to someone now\n- Call helpline\n- Avoid being alone"
+        }
+
+        st.subheader("Personalized Tips")
+        st.markdown(tips.get(pred_label, "Consult a professional immediately."))
 
         # PDF Report
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
+        pdf.cell(200, 10, txt="Postpartum Depression Risk Prediction", ln=True, align='C')
+        pdf.ln(10) # Add a line break for spacing
         pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
-        pdf.cell(200, 10, txt=f"Location: {location}", ln=True)
+        pdf.cell(200, 10, txt=f"Place: {place}", ln=True)
         pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
-        pdf.cell(200, 10, txt=f"Family Support: {support}", ln=True)
-        pdf.cell(200, 10, txt=f"EPDS Score: {score_sum}", ln=True)
-        pdf.cell(200, 10, txt=f"Predicted Risk Level: {label}", ln=True)
-        pdf.cell(200, 10, txt=f"Generated on: {datetime.now().isoformat(timespec='seconds')}", ln=True)
+        pdf.cell(200, 10, txt=f"Support Level: {support}", ln=True)
+        pdf.ln(5) # Small line break
+        pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
+        pdf.cell(200, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
+        pdf.ln(10) # Line break before note
+        pdf.set_font("Arial", 'I', size=10) # Italic for the note
+        pdf.cell(200, 10, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)", ln=True)
 
-        buffer = BytesIO()
-        pdf.output(buffer)
-        b64 = base64.b64encode(buffer.getvalue()).decode()
-        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{name}_PPD_Report.pdf">📄 Download Your PDF Report</a>'
+        # Add questions and answers to PDF
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', size=12)
+        pdf.cell(200, 10, txt="Your Responses:", ln=True)
+        pdf.set_font("Arial", size=10)
+        for i, (q_text, options) in enumerate(q_responses):
+            selected_option_value = q_values[i]
+            selected_option_text = [k for k, v in options.items() if v == selected_option_value][0]
+            pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Your Answer: {selected_option_text} (Score: {selected_option_value})")
+            pdf.ln(2) # Small space between questions
+
+        pdf_buffer = BytesIO()
+        pdf.output(pdf_buffer)
+        b64_pdf = base64.b64_en.code(pdf_buffer.getvalue()).decode('utf-8')
+        href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
-elif menu == "📊 Result Explanation":
-    st.title("📊 Understanding Your Risk Score")
-    st.markdown("""
-    | Risk Level | Interpretation |
-    |------------|----------------|
-    | Mild (0)   | Normal mood variations |
-    | Moderate (1) | Some depressive signs; consider monitoring |
-    | Severe (2) | Significant risk; consult professional |
-    | Profound (3) | Urgent help required |
-    """)
+        st.markdown("<br>", unsafe_allow_html=True) # Add some space
+        if st.button("Restart Test"):
+            for key in ['question_index', 'responses', 'age', 'support', 'name', 'place']:
+                st.session_state.pop(key, None)
+            st.session_state.page = "Home" # Redirect to home on restart
+            st.rerun()
 
-elif menu == "📩 Feedback":
-    st.title("📩 We Value Your Feedback")
-    user = st.text_input("Your Name")
-    fb = st.text_area("Share your thoughts")
+# RESULT EXPLANATION
+elif menu == "Result Explanation":
+    st.header("Understanding Risk Levels")
+    st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
+    st.markdown("""
+    | Risk Level | Meaning |
+    |------------|---------|
+    | Mild       | Normal ups and downs, low risk of PPD. |
+    | Moderate   | Requires monitoring; symptoms are noticeable but not severe. |
+    | Severe     | Suggests possible clinical depression; professional assessment recommended. |
+    | Profound   | Needs professional help urgently; symptoms are significant and impacting daily life. |
+    """)
+    st.markdown("<p class='custom-note'>The numerical values (0, 1, 2, 3) correspond to the categories 'Mild', 'Moderate', 'Severe', and 'Profound' respectively, as mapped by the model's output.</p>", unsafe_allow_html=True)
+
+
+# FEEDBACK
+elif menu == "Feedback":
+    st.header("Share Your Feedback")
+    name = st.text_input("Your Name (Optional)")
+    message = st.text_area("Your Feedback", height=150)
+    st.markdown("<br>", unsafe_allow_html=True)
     if st.button("Submit Feedback"):
-        st.success("Thank you for your feedback!")
+        if message.strip():
+            st.success("Thank you for your valuable feedback! We appreciate your input.")
+            # In a real application, you would save this feedback (e.g., to a database, file, or email).
+            st.session_state.feedback_submitted = True # A flag to prevent resubmission on rerun
+        else:
+            st.warning("Please enter some feedback before submitting.")
 
-elif menu == "🔗 Resources":
-    st.title("🔗 Mental Health Resources")
+
+# RESOURCES
+elif menu == "Resources":
+    st.header("Helpful Links and Support")
     st.markdown("""
-    - [National Mental Health Helpline - 1800-599-0019](https://www.mohfw.gov.in)
-    - [WHO on Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
-    - [Postpartum Support International](https://www.postpartum.net/)
-    """)
+    <div style="background-color: #1C2C5B; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+        <h3>📞 National Mental Health Helpline (India)</h3>
+        <p>For immediate support and counseling:</p>
+        <p style="font-size: 1.2em; font-weight: bold; color: #E84C3D;">1800-599-0019</p>
+        <a href="https://www.mohfw.gov.in" target="_blank" style="color: #17A2B8; text-decoration: none;">Visit MoHFW Website</a>
+    </div>
+
+    <div style="background-color: #1C2C5B; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+        <h3>🌍 WHO Maternal Mental Health</h3>
+        <p>Information and resources from the World Health Organization:</p>
+        <a href="https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth" target="_blank" style="color: #17A2B8; text-decoration: none;">Learn more on WHO Website</a>
+    </div>
+
+    <div style="background-color: #1C2C5B; padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+        <h3>🤝 Postpartum Support International (PSI)</h3>
+        <p>Dedicated to helping families worldwide recover from perinatal mood and anxiety disorders:</p>
+        <a href="https://www.postpartum.net/" target="_blank" style="color: #17A2B8; text-decoration: none;">Visit Postpartum Support International</a>
+    </div>
+    """, unsafe_allow_html=True)
