@@ -195,7 +195,7 @@ if menu == "Home":
         <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
         <h3 class="home-subtitle">Empowering maternal health through smart technology</h3>
         <div style="margin-top: 40px;">
-            {st.button("Start Test", key="home_start_button")._repr_html_()}
+            {st.button("Start Test", key="home_start_button")}  # Corrected line: Removed ._repr_html_()
         </div>
     </div>
     """, unsafe_allow_html=True)
