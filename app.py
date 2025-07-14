@@ -18,8 +18,6 @@ except FileNotFoundError:
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
 # --- Custom CSS and Theming ---
-# This CSS aims to mimic some of the modern aesthetic of vdigtech.com,
-# focusing on dark background, light text, and subtle highlights.
 st.markdown("""
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
@@ -48,19 +46,38 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: -10px; /* Pull subtitle closer to title */
 }
 
-/* Sidebar Styling */
-.stSidebar {
+/* Sidebar Styling - Add background image */
+[data-testid="stSidebar"] {
     background-color: #1C2C5B; /* Slightly lighter blue for sidebar */
     color: #FAFAFA;
     padding-top: 30px; /* Add some padding to the top */
+    background-image: url('data:image/png;base64,{bg_image_base64}'); /* Placeholder for base64 image */
+    background-size: cover; /* Cover the entire sidebar area */
+    background-position: center; /* Center the image */
+    background-repeat: no-repeat; /* Do not repeat the image */
 }
 
-/* Radio buttons in sidebar */
-.stSidebar .stRadio > label {
-    color: #FAFAFA !important; /* Ensure sidebar radio labels are light */
-    font-weight: bold;
-    padding: 10px 0;
+/* Sidebar Navigation Items Animation */
+[data-testid="stSidebarNav"] li a {
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease; /* Smooth transition */
+    padding: 10px 15px; /* Add padding for better clickable area */
+    margin: 5px 0; /* Add vertical margin between items */
+    border-radius: 5px; /* Slightly rounded corners */
 }
+
+[data-testid="stSidebarNav"] li a:hover {
+    background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
+    color: #E84C3D; /* Highlight text with accent color */
+    transform: translateX(5px); /* Slide slightly to the right on hover */
+}
+
+/* Active (selected) navigation item */
+[data-testid="stSidebarNav"] li a[aria-current="page"] {
+    background-color: #E84C3D; /* Vibrant red for selected item */
+    color: white; /* White text for selected item */
+    font-weight: bold;
+}
+
 
 /* Buttons Styling - General */
 div.stButton > button:first-child {
@@ -102,21 +119,21 @@ div.stButton > button:first-child:hover {
 }
 
 /* Success, Info, Warning messages */
-.stAlert {
+div[data-testid="stAlert"] {
     border-radius: 8px;
     padding: 15px;
 }
-.stAlert.success {
+div[data-testid="stAlert"].success {
     background-color: #28a74520; /* Light green transparent background */
     color: #28a745; /* Green text */
     border-left: 5px solid #28a745;
 }
-.stAlert.info {
+div[data-testid="stAlert"].info {
     background-color: #17a2b820; /* Light blue transparent background */
     color: #17a2b8; /* Blue text */
     border-left: 5px solid #17a2b8;
 }
-.stAlert.warning {
+div[data-testid="stAlert"].warning {
     background-color: #ffc10720; /* Light yellow transparent background */
     color: #ffc107; /* Yellow text */
     border-left: 5px solid #ffc107;
@@ -164,7 +181,6 @@ a[download]:hover {
 }
 
 /* Blue background animation (original, slightly modified for consistency) */
-/* The animation itself is simple, but the background color is now part of the theme */
 @keyframes fadeBg {
     0% { background-color: #0A1128; }
     50% { background-color: #0A1128; }
@@ -172,6 +188,22 @@ a[download]:hover {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# Function to encode image to base64
+def get_base64_image(image_path):
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode('utf-8')
+    except FileNotFoundError:
+        st.warning(f"Background image not found at {image_path}. Please ensure 'background.png' is in the same directory.")
+        return ""
+
+# Encode background image (assuming background.png is in the same directory)
+bg_image_base64 = get_base64_image("background.png")
+
+# Replace placeholder in CSS with actual base64 image data
+css_with_image = st.empty()._repr_html_().replace('{bg_image_base64}', bg_image_base64)
+st.markdown(css_with_image, unsafe_allow_html=True)
 
 
 # Sidebar navigation
@@ -194,17 +226,16 @@ if menu == "Home":
     <div style="text-align: center; padding: 60px 20px;">
         <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
         <h3 class="home-subtitle">Empowering maternal health through smart technology</h3>
-        <div style="margin-top: 40px;">
-            {st.button("Start Test", key="home_start_button")}  # Corrected line: Removed ._repr_html_()
-        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Streamlit buttons need to be rendered directly for their functionality
-    # The markdown above is for styling, we handle the button click separately.
-    if st.session_state.get("home_start_button"):
+    # Move the button call outside of the markdown block to control its placement
+    # It will now render below the markdown content.
+    st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True) # Center the button
+    if st.button("Start Test", key="home_start_button"):
         st.session_state.page = "Take Test"
         st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # TEST PAGE
@@ -309,17 +340,6 @@ elif menu == "Take Test":
             "EPDS_Score": score
         }])
 
-        # Need to handle categorical features for prediction
-        # Assuming 'FamilySupport' is the only categorical feature for the model
-        # The model pipeline should handle encoding. If it expects encoded values,
-        # you need to ensure the pipeline correctly transforms "High", "Medium", "Low".
-        # If the model itself was trained on the raw strings, then it's fine.
-        # Given your existing code, assuming the model pipeline handles 'FamilySupport' as is.
-        # If 'FamilySupport' needs to be encoded before passing to model.predict, it would look like:
-        # support_encoded = le.transform([support])[0] # Assuming le is trained on support levels
-        # input_df['FamilySupport'] = support_encoded
-
-
         pred_encoded = model.predict(input_df.drop(columns=["Name"]))[0]
         pred_label = le.inverse_transform([pred_encoded])[0]
 
@@ -394,7 +414,7 @@ elif menu == "Take Test":
 
         pdf_buffer = BytesIO()
         pdf.output(pdf_buffer)
-        b64_pdf = base64.b64_en.code(pdf_buffer.getvalue()).decode('utf-8')
+        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
