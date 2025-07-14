@@ -134,15 +134,14 @@ elif menu == "📝 Take Test":
 
     if st.button("Predict Risk"):
         score_sum = sum(scores)
-        data = pd.DataFrame([{
-            "Name": name,
+        data = pd.DataFrame([{  # Name removed from model input
             "Age": age,
             "FamilySupport": support,
             **{f"Q{i+1}": scores[i] for i in range(10)},
             "EPDS_Score": score_sum
         }])
 
-        pred = model.predict(data.drop(columns=["Name"]))[0]
+        pred = model.predict(data)[0]
         label = le.inverse_transform([pred])[0]
 
         st.success(f"{name}, your predicted Postpartum Depression Risk is: {label}")
@@ -177,7 +176,7 @@ elif menu == "📝 Take Test":
         pdf.cell(200, 10, txt=f"Family Support: {support}", ln=True)
         pdf.cell(200, 10, txt=f"EPDS Score: {score_sum}", ln=True)
         pdf.cell(200, 10, txt=f"Predicted Risk Level: {label}", ln=True)
-        pdf.cell(200, 10, txt=f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+        pdf.cell(200, 10, txt=f"Generated on: {datetime.now().isoformat(timespec='seconds')}", ln=True)
 
         buffer = BytesIO()
         pdf.output(buffer)
@@ -210,11 +209,3 @@ elif menu == "🔗 Resources":
     - [WHO on Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [Postpartum Support International](https://www.postpartum.net/)
     """)
-
-else:
-     return "I'm still learning! Please try asking something else related to postpartum depression or the app."
-
-if user_input:
-        st.markdown(f"**You:** {user_input}")
-        response = get_bot_reply(user_input)
-        st.markdown(f"**Bot:** {response}")
