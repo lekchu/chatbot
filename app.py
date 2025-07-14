@@ -32,6 +32,8 @@ bg_image_base64 = get_base64_image("background.png")
 
 # --- Custom CSS and Theming ---
 # Build the CSS string with the dynamic background image included
+# Use a triple curly brace {{{ }}} for the f-string to properly escape
+# the double curly braces {{ }} used in CSS for rules.
 custom_css = f"""
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
@@ -211,6 +213,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
+# Changed st.session_state.page = st.sidebar.radio to use on_change callback
 st.sidebar.radio(
     "Navigate",
     ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
@@ -233,7 +236,7 @@ if menu == "Home":
     # Move the button call outside of the markdown block to control its placement
     # It will now render below the markdown content.
     st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True) # Center the button
-    if st.button("Start Test", key="home_start_button"):
+    if st.button("Start Test", key="home_start_button"): # Add a key to the button
         st.session_state.page = "Take Test"
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
@@ -420,6 +423,7 @@ elif menu == "Take Test":
         st.markdown(href, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True) # Add some space
+        # Changed button label from "Restart" to "Restart Test" for clarity
         if st.button("Restart Test"):
             for key in ['question_index', 'responses', 'age', 'support', 'name', 'place']:
                 st.session_state.pop(key, None)
