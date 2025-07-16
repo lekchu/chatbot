@@ -57,7 +57,7 @@ header {visibility: hidden;}
 }
 
 /* Style for Streamlit buttons within the top navigation bar context */
-/* This targets buttons generally, you might need more specific targeting if other buttons are affected */
+/* Target specific Streamlit button elements to apply custom styles */
 .stButton > button {
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
@@ -75,10 +75,6 @@ header {visibility: hidden;}
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateY(-2px); /* Subtle lift */
 }
-
-/* For the active (selected) navigation button. Streamlit buttons don't have a direct "selected" class,
-   so we'll apply this via conditional styling if using st.markdown for buttons, or accept limited active state.
-   For st.button, we'll rely on reruns and default Streamlit styling. */
 
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {
@@ -234,32 +230,26 @@ if "place" not in st.session_state:
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
+
 # --- TOP Navigation Bar Implementation ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-# Use st.columns to lay out buttons horizontally
+st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True)
 cols = st.columns(len(nav_items))
 for i, item in enumerate(nav_items):
     with cols[i]:
-        # Determine button style based on current page
-        button_style = ""
-        if st.session_state.page == item:
-            # Apply a distinct style for the active button
-            button_style = "background-color: #E84C3D; color: white; font-weight: bold;"
-        
-        # Streamlit buttons don't directly support CSS classes or complex styling via st.button arguments.
-        # The most reliable way for active state is to use st.markdown with custom HTML for buttons.
-        # However, for simplicity and to avoid JS hacks, we'll just use Streamlit's native button and let
-        # the rerun handle the state change. Custom CSS for hover is global.
-
-        if st.button(item, key=f"top_nav_button_{item}", help=f"Go to {item} page"):
+        # Use a simple button and rely on Streamlit's rerender for state change.
+        # Apply conditional style directly if possible, or rely on hover for simplicity.
+        button_label = f"<span style='color:{'#E84C3D' if st.session_state.page == item else 'white'};'>{item}</span>"
+        if st.button(button_label, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
             st.session_state.page = item
             st.rerun()
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # --- Main Content Rendering ---
 menu = st.session_state.page # Get the current page from session state
 
-# HOME
 # HOME
 if menu == "Home":
     # Create two columns for the home page layout
@@ -281,9 +271,10 @@ if menu == "Home":
 
     with col_right:
         st.write(" ") # Add some space or placeholder if needed
-        # Replace 'path/to/your/gif.gif' with the actual filename and path of your GIF.
-        # For example, if your GIF is named 'maternity_care.gif' and is in the same directory as app.py:
-        st.image("maternity_care.gif", use_column_width=True) # use_column_width makes it fit the column width
+        # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
+        # Ensure your GIF is in the same directory as app.py, or provide a relative path.
+        st.image("maternity_care.gif", use_container_width=True) # Changed to use_container_width
+
 
 # TEST PAGE
 elif menu == "Take Test":
@@ -440,7 +431,8 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
-        st.markdown(tips.get(pred_label, "Consult a professional immediately."))
+        # Use Markdown to correctly interpret \\n as newlines
+        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
         pdf = FPDF()
@@ -477,7 +469,7 @@ elif menu == "Take Test":
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\\n'): # Use '\\n' here
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\\n'):
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
@@ -513,6 +505,7 @@ elif menu == "Take Test":
             st.session_state.page = "Home"
             st.rerun()
 
+# RESULT EXPLANATION
 elif menu == "Result Explanation":
     st.header("Understanding Risk Levels")
     st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
@@ -526,6 +519,8 @@ elif menu == "Result Explanation":
     """)
     st.markdown("<p class='custom-note'>The numerical values (0, 1, 2, 3) correspond to the categories 'Mild', 'Moderate', 'Severe', and 'Profound' respectively, as mapped by the model's output.</p>", unsafe_allow_html=True)
 
+
+# FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
     if not st.session_state.feedback_submitted:
@@ -546,6 +541,7 @@ elif menu == "Feedback":
             st.session_state.feedback_submitted = False
             st.rerun()
 
+# RESOURCES
 elif menu == "Resources":
     st.header("Helpful Links and Support")
     st.markdown("""
