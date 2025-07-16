@@ -76,6 +76,11 @@ header {visibility: hidden;}
     transform: translateY(-2px); /* Subtle lift */
 }
 
+/* For the active (selected) navigation button */
+/* Streamlit buttons don't have a direct "selected" class, so we'll apply this via conditional styling if using st.markdown for buttons, or accept limited active state. */
+/* If you want a more distinct "active" button, consider using st.markdown with raw HTML buttons and managing an active CSS class yourself. For now, we use button_label to change text color. */
+
+
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA;
@@ -234,17 +239,18 @@ if "feedback_submitted" not in st.session_state:
 # --- TOP Navigation Bar Implementation ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True)
+# Use st.columns to lay out buttons horizontally
+st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Container for the nav bar
 cols = st.columns(len(nav_items))
 for i, item in enumerate(nav_items):
     with cols[i]:
-        # Use a simple button and rely on Streamlit's rerender for state change.
-        # Apply conditional style directly if possible, or rely on hover for simplicity.
-        button_label = f"<span style='color:{'#E84C3D' if st.session_state.page == item else 'white'};'>{item}</span>"
-        if st.button(button_label, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
+        # Use HTML within st.button for coloring, as direct styling on st.button itself is limited.
+        # This is a common workaround for custom button appearance in Streamlit.
+        button_html = f"<span style='color:{'#E84C3D' if st.session_state.page == item else 'white'};'>{item}</span>"
+        if st.button(button_html, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
             st.session_state.page = item
             st.rerun()
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True) # Close the container
 
 
 # --- Main Content Rendering ---
@@ -270,10 +276,11 @@ if menu == "Home":
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.write(" ") # Add some space or placeholder if needed
+        st.write(" ") # Add some space or placeholder if needed for alignment
         # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
         # Ensure your GIF is in the same directory as app.py, or provide a relative path.
-        st.image("maternity_care.gif", use_container_width=True) # Changed to use_container_width
+        # Changed use_column_width to use_container_width
+        st.image("maternity_care.gif", use_container_width=True) # This should display the GIF
 
 
 # TEST PAGE
@@ -431,8 +438,7 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
-        # Use Markdown to correctly interpret \\n as newlines
-        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
+        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n')) # Corrected: use .replace('\\n', '\n') for markdown
 
         # PDF Report Generation
         pdf = FPDF()
@@ -488,7 +494,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S').encode('latin-1') # Corrected dest parameter and encoding
+        pdf.output(pdf_buffer, dest='S') # Corrected dest parameter for in-memory output
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -505,7 +511,6 @@ elif menu == "Take Test":
             st.session_state.page = "Home"
             st.rerun()
 
-# RESULT EXPLANATION
 elif menu == "Result Explanation":
     st.header("Understanding Risk Levels")
     st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
@@ -519,8 +524,6 @@ elif menu == "Result Explanation":
     """)
     st.markdown("<p class='custom-note'>The numerical values (0, 1, 2, 3) correspond to the categories 'Mild', 'Moderate', 'Severe', and 'Profound' respectively, as mapped by the model's output.</p>", unsafe_allow_html=True)
 
-
-# FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
     if not st.session_state.feedback_submitted:
@@ -541,7 +544,6 @@ elif menu == "Feedback":
             st.session_state.feedback_submitted = False
             st.rerun()
 
-# RESOURCES
 elif menu == "Resources":
     st.header("Helpful Links and Support")
     st.markdown("""
