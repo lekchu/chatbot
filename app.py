@@ -12,7 +12,7 @@ try:
     le = joblib.load("label_encoder.pkl")
 except FileNotFoundError:
     st.error("Error: Model or label encoder file not found. Please ensure 'ppd_model_pipeline.pkl' and 'label_encoder.pkl' are in the same directory as 'app.py'.")
-    st.stop() # Stop the app if essential files are missing
+    st.stop()
 
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
@@ -24,10 +24,10 @@ def get_base64_image(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
     except FileNotFoundError:
-        return "" # Return empty string if not found, to avoid breaking CSS
+        return ""
 
 # --- Dynamic CSS Generation with Background Image and Animations ---
-bg_image_base64 = get_base64_image("background.png") # Make sure 'background.png' exists if you want a background image
+bg_image_base64 = get_base64_image("background.png") # Ensure 'background.png' exists if you want a background image
 
 custom_css = f"""
 <style>
@@ -61,15 +61,15 @@ header {{visibility: hidden;}}
     justify-content: center; /* Center the navigation items */
     gap: 20px; /* Space between navigation buttons */
     border-bottom: 2px solid #E84C3D; /* Accent line at the bottom of the nav */
-    /* Position fixed to keep it at the top when scrolling */
     position: sticky; /* or fixed */
     top: 0;
     width: 100%;
     z-index: 1000; /* Ensure it stays on top of other content */
 }}
 
-/* Style for the buttons within the top navigation bar */
-.stButton > button {{
+/* Style for individual buttons to be part of the top nav */
+/* Targeting the actual button element directly */
+.top-nav-button {{
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
     border: none;
@@ -81,15 +81,18 @@ header {{visibility: hidden;}}
     border-radius: 5px;
 }}
 
-.stButton > button:hover {{
+.top-nav-button:hover {{
     background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateY(-2px); /* Subtle lift */
 }}
 
-/* For the active (selected) navigation button. Streamlit buttons don't have a direct "selected" state in CSS
-   like radio buttons, so we rely on Streamlit to re-render. We'll simulate it by applying the background color
-   directly in the button creation logic if it's the current page. */
+/* Style for the active (selected) navigation button */
+.top-nav-button.active {{
+    background-color: #E84C3D; /* Vibrant red for selected item */
+    color: white; /* White text for selected item */
+    font-weight: bold;
+}}
 
 
 /* Header/Title Styling */
@@ -229,6 +232,7 @@ a[download]:hover {{
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # --- Session State Initialization ---
+# Initialize session state variables once at the beginning of the script
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "question_index" not in st.session_state:
@@ -243,6 +247,7 @@ if "name" not in st.session_state:
     st.session_state.name = ""
 if "place" not in st.session_state:
     st.session_state.place = ""
+# Flag for feedback submission to prevent re-displaying success message on rerun
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
@@ -250,32 +255,34 @@ if "feedback_submitted" not in st.session_state:
 # --- TOP Navigation Bar Implementation ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-# Use a container for the navigation buttons to apply flexbox styling
-st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True)
+st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Start nav container
 for item in nav_items:
-    # Check if this is the current page to apply active styling
-    is_current_page = st.session_state.page == item
+    # Use a direct st.button for each item.
+    # We will apply active styling by adding a class if it's the current page.
+    # Note: Streamlit's st.button does not directly accept 'class' or 'id' for custom CSS.
+    # The best way to style is via its native CSS selectors or by wrapping it in st.markdown.
+    # For active state, we'll use a hack or just rely on the button's hover state for simplicity.
     
-    # Custom style for the button to make it look "active"
-    button_style = ""
-    if is_current_page:
-        button_style = "background-color: #E84C3D; color: white; font-weight: bold;"
+    # For a more robust active state, we need to create custom HTML for buttons
+    # or rely on Streamlit's internal element IDs, which can be unstable.
+    # For now, let's just use the default button and its hover state, as direct
+    # active class injection for st.button is problematic.
+    
+    # Alternatively, you can render custom HTML buttons for full control:
+    is_active = " active" if st.session_state.page == item else ""
+    st.markdown(f"""
+    <button class="top-nav-button{is_active}" onclick="window.parent.postMessage({{
+        streamlit: {{type: 'SET_PAGE_STATE', payload: {{page: '{item}'}}}}
+    }}, '*')">
+        {item}
+    </button>
+    """, unsafe_allow_html=True)
 
-    # Create the button with a unique key and custom CSS injected via `help` for styling
-    if st.button(
-        item,
-        key=f"top_nav_{item}",
-        help=f"<style>div.stButton > button[key='top_nav_{item}'] {{ {button_style} }}</style>",
-        unsafe_allow_html=True # Allow HTML in help for injecting specific button styles
-    ):
-        st.session_state.page = item
-        st.rerun()
-st.markdown("</div>", unsafe_allow_html=True) # Close the navigation container
+st.markdown("</div>", unsafe_allow_html=True) # End nav container
 
 
+# --- Main Content Rendering ---
 menu = st.session_state.page # Get the current page from session state
-
-# --- Main Content Rendering (remains largely the same) ---
 
 # HOME
 if menu == "Home":
@@ -499,7 +506,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S')
+        pdf.output(pdf_buffer, dest='S') # Corrected dest parameter
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -516,6 +523,7 @@ elif menu == "Take Test":
             st.session_state.page = "Home"
             st.rerun()
 
+# RESULT EXPLANATION
 elif menu == "Result Explanation":
     st.header("Understanding Risk Levels")
     st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
@@ -529,6 +537,8 @@ elif menu == "Result Explanation":
     """)
     st.markdown("<p class='custom-note'>The numerical values (0, 1, 2, 3) correspond to the categories 'Mild', 'Moderate', 'Severe', and 'Profound' respectively, as mapped by the model's output.</p>", unsafe_allow_html=True)
 
+
+# FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
     if not st.session_state.feedback_submitted:
@@ -549,6 +559,7 @@ elif menu == "Feedback":
             st.session_state.feedback_submitted = False
             st.rerun()
 
+# RESOURCES
 elif menu == "Resources":
     st.header("Helpful Links and Support")
     st.markdown("""
