@@ -25,16 +25,13 @@ def get_base64_image(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
     except FileNotFoundError:
-        st.warning(f"Background image not found at '{image_path}'. Ensure it's in the same directory as 'app.py'.")
+        # st.warning(f"Background image not found at '{image_path}'. Ensure it's in the same directory as 'app.py'.")
         return "" # Return empty string if not found, to avoid breaking CSS
 
-# --- Dynamic CSS Generation with Background Image ---
+# --- Dynamic CSS Generation with Background Image and Animations ---
 # Get base64 string for background image (assuming 'background.png' exists)
-# You need to have an image file named 'background.png' in your app's directory.
 bg_image_base64 = get_base64_image("background.png")
 
-# Define the custom CSS. Using f-string for dynamic injection of bg_image_base64.
-# Use triple curly braces {{{ }}} to escape literal curly braces {{ }} in CSS rules.
 custom_css = f"""
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
@@ -42,7 +39,48 @@ custom_css = f"""
     background-color: #0A1128; /* Deep dark blue, similar to vdigtech.com */
     color: #FAFAFA; /* Light off-white for general text */
     font-family: 'Arial', sans-serif; /* A clear, modern sans-serif font */
+    animation: fadeIn 2s ease-in-out; /* Global fade-in animation for the app */
 }}
+
+/* Hide the default Streamlit header and footer */
+#MainMenu {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+header {{visibility: hidden;}}
+
+/* Custom Header / Top Navigation Bar */
+.top-nav-container {{
+    background-color: #1C2C5B; /* Darker blue for header */
+    padding: 10px 20px;
+    display: flex;
+    justify-content: center; /* Center the navigation items */
+    gap: 20px; /* Space between navigation buttons */
+    border-bottom: 2px solid #E84C3D; /* Accent line at the bottom of the nav */
+}}
+
+.top-nav-button > button {{
+    background-color: transparent; /* Make buttons transparent initially */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    border-radius: 5px;
+}}
+
+.top-nav-button > button:hover {{
+    background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
+    color: #E84C3D; /* Highlight text with accent color */
+    transform: translateY(-2px); /* Subtle lift */
+}}
+
+.top-nav-button > button[aria-selected="true"] {{
+    background-color: #E84C3D; /* Vibrant red for selected item */
+    color: white; /* White text for selected item */
+    font-weight: bold;
+}}
+
 
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {{
@@ -55,51 +93,23 @@ h1, h2, h3, h4, h5, h6 {{
     font-size: 3.5em;
     color: #FAFAFA;
     text-shadow: 2px 2px 8px rgba(0,0,0,0.5); /* Subtle shadow for depth */
+    animation: slideInFromLeft 1s ease-out; /* Animation for home title */
 }}
 
 .home-subtitle {{
     font-size: 1.6em;
     color: #E0E0E0; /* Slightly dimmer than main text */
     margin-top: -10px; /* Pull subtitle closer to title */
+    animation: slideInFromRight 1s ease-out 0.3s forwards; /* Animation for subtitle with delay */
+    opacity: 0; /* Start invisible for animation */
 }}
 
-/* Sidebar Styling - Add background image */
+/* Sidebar Styling - Add background image - HIDING IT IF TOP NAV IS USED */
 [data-testid="stSidebar"] {{
-    background-color: #1C2C5B; /* Slightly lighter blue for sidebar */
-    color: #FAFAFA;
-    padding-top: 30px; /* Add some padding to the top */
-    background-image: url('data:image/png;base64,{bg_image_base64}'); /* This line adds your image */
-    background-size: cover; /* Cover the entire sidebar area */
-    background-position: center; /* Center the image */
-    background-repeat: no-repeat; /* Do not repeat the image */
+    display: none; /* Hide the entire sidebar */
 }}
 
-/* Sidebar Navigation Items Animation */
-[data-testid="stSidebarNav"] li a {{
-    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease; /* Smooth transition */
-    padding: 10px 15px; /* Add padding for better clickable area */
-    margin: 5px 0; /* Add vertical margin between items */
-    border-radius: 5px; /* Slightly rounded corners */
-    text-decoration: none; /* Remove underline from links */
-    color: #FAFAFA; /* Default text color for nav items */
-}}
-
-[data-testid="stSidebarNav"] li a:hover {{
-    background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
-    color: #E84C3D; /* Highlight text with accent color */
-    transform: translateX(5px); /* Slide slightly to the right on hover */
-}}
-
-/* Active (selected) navigation item */
-[data-testid="stSidebarNav"] li a[aria-current="page"] {{
-    background-color: #E84C3D; /* Vibrant red for selected item */
-    color: white; /* White text for selected item */
-    font-weight: bold;
-    transform: translateX(0px); /* Keep active item stationary */
-}}
-
-
-/* Buttons Styling - General */
+/* Buttons Styling - General (for buttons not in top nav) */
 div.stButton > button:first-child {{
     background-color: #E84C3D; /* A vibrant red, similar to vdigtech.com's accents */
     color: white;
@@ -128,10 +138,21 @@ div.stButton > button:first-child:hover {{
     border: 1px solid #4A6B9C; /* Subtle border */
     border-radius: 5px;
     padding: 10px;
+    width: 100%; /* Ensure inputs take full width of their container */
 }}
 .stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {{
     color: #FAFAFA; /* Ensure labels are light */
 }}
+
+/* Specific styling for the selectbox dropdown to ensure text visibility */
+.stSelectbox div[data-baseweb="select"] > div {{
+    width: 100%; /* Ensure the select box itself takes full width */
+}}
+.stSelectbox div[data-baseweb="select"] > div > div[role="button"] {{
+    width: 100%; /* Ensure the displayed button within selectbox takes full width */
+    padding-right: 25px; /* Add padding to prevent text from going under arrow */
+}}
+
 
 /* Radio buttons (main content) */
 .stRadio > label {{
@@ -200,13 +221,22 @@ a[download]:hover {{
     margin-top: 20px;
 }}
 
-/* Blue background animation (original, slightly modified for consistency) */
-/* This animation is on the overall app background, not directly related to sidebar slowness */
-@keyframes fadeBg {{
-    0% {{ background-color: #0A1128; }}
-    50% {{ background-color: #0A1128; }}
-    100% {{ background-color: #0A1128; }}
+/* Keyframe Animations for Home Page */
+@keyframes fadeIn {{
+    from {{ opacity: 0; }}
+    to {{ opacity: 1; }}
 }}
+
+@keyframes slideInFromLeft {{
+    from {{ transform: translateX(-100%); opacity: 0; }}
+    to {{ transform: translateX(0); opacity: 1; }}
+}}
+
+@keyframes slideInFromRight {{
+    from {{ transform: translateX(100%); opacity: 0; }}
+    to {{ transform: translateX(0); opacity: 1; }}
+}}
+
 </style>
 """
 
@@ -233,15 +263,20 @@ if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
 
-# --- Sidebar Navigation ---
-# Use on_change callback to update st.session_state.page
-st.sidebar.radio(
-    "Navigate",
-    ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
-    index=["Home", "Take Test", "Result Explanation", "Feedback", "Resources"].index(st.session_state.page),
-    key="menu", # This key holds the selected value
-    on_change=lambda: setattr(st.session_state, 'page', st.session_state.menu) # Update page state on radio change
-)
+# --- TOP Navigation Bar ---
+nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
+cols = st.columns(len(nav_items)) # Create a column for each navigation item
+
+st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Start nav container
+for i, item in enumerate(nav_items):
+    # Use st.markdown to create a custom button-like element with class 'top-nav-button'
+    # and a data attribute to indicate if it's the current page
+    is_selected = "true" if st.session_state.page == item else "false"
+    if st.button(item, key=f"top_nav_{item}", type="secondary"):
+        st.session_state.page = item
+        st.rerun()
+st.markdown("</div>", unsafe_allow_html=True) # End nav container
+
 
 menu = st.session_state.page # Get the current page from session state
 
@@ -249,6 +284,7 @@ menu = st.session_state.page # Get the current page from session state
 
 # HOME
 if menu == "Home":
+    # Apply specific classes for animation
     st.markdown(f"""
     <div style="text-align: center; padding: 60px 20px;">
         <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
@@ -273,8 +309,10 @@ elif menu == "Take Test":
         st.session_state.name = st.text_input("First Name", value=st.session_state.name, key="first_name_input")
         st.session_state.place = st.text_input("Your Place", value=st.session_state.place, key="place_input")
         st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age, key="age_slider")
-        st.session_state.support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
-                                                index=["High", "Medium", "Low"].index(st.session_state.support),
+        # Ensure selectbox uses the correct current value from session_state
+        support_options = ["High", "Medium", "Low"]
+        st.session_state.support = st.selectbox("Level of Family Support", support_options,
+                                                index=support_options.index(st.session_state.support),
                                                 key="support_selectbox")
 
         st.markdown("<br>", unsafe_allow_html=True) # Add some space
@@ -313,9 +351,19 @@ elif menu == "Take Test":
     if 1 <= idx <= 10:
         st.markdown(f"**Question {idx} of 10**")
         q_text, options = q_responses[idx - 1]
-        # Use st.session_state.responses[idx-1] for default if navigating back
-        # Ensure that the length of responses is at least idx, otherwise, use the first option as default
-        default_index = list(options.values()).index(st.session_state.responses[idx-1]) if len(st.session_state.responses) >= idx else 0
+        
+        # Determine current selection for radio button if navigating back
+        current_response_value = None
+        if len(st.session_state.responses) >= idx:
+            current_response_value = st.session_state.responses[idx-1]
+        
+        default_index = 0
+        if current_response_value is not None:
+            # Find the index of the previously selected value
+            for i, (key, val) in enumerate(options.items()):
+                if val == current_response_value:
+                    default_index = i
+                    break
 
         choice = st.radio(f"{q_text}", list(options.keys()), key=f"q_radio_{idx}", index=default_index)
 
@@ -326,16 +374,16 @@ elif menu == "Take Test":
             if st.button("Back", key=f"back_button_{idx}"):
                 if idx > 1:
                     st.session_state.question_index -= 1
-                    # Only pop if there are responses to remove for the current question
-                    if len(st.session_state.responses) >= idx:
-                        st.session_state.responses.pop()
+                    # No need to pop here, as the response will be overwritten by next button click
+                    # if the user changes their answer on a previous question.
+                    # Or, if simply going back, the state is preserved until they move forward again.
                     st.rerun()
-                else: # If on first question, go back to info input
+                else: # If on first question (idx == 1), go back to info input (idx == 0)
                     st.session_state.question_index = 0
                     st.rerun()
         with col2:
             if st.button("Next", key=f"next_button_{idx}"):
-                # Update the response for the current question before moving to next
+                # Store or update the response for the current question
                 if len(st.session_state.responses) < idx: # If it's a new question
                     st.session_state.responses.append(options[choice])
                 else: # If navigating back and then forward (updating existing response)
@@ -344,26 +392,25 @@ elif menu == "Take Test":
                 st.session_state.question_index += 1
                 st.rerun()
 
-    elif idx == 11:
+    elif idx == 11: # End of questionnaire, display results
         name = st.session_state.name
         place = st.session_state.place
         age = st.session_state.age
         support = st.session_state.support
         q_values = st.session_state.responses
 
-        if len(q_values) != 10: # Ensure all 10 questions are answered
+        if len(q_values) != 10: # Basic check if all 10 questions have responses
             st.error("It seems some questions were skipped or not completed. Please go back and complete the questionnaire.")
             if st.button("Go Back to Questions", key="go_back_questions"):
                 st.session_state.question_index = 1 # Reset to the first question
-                # Don't clear responses if going back, allow user to review/correct
+                # Do NOT clear responses here if the user just needs to complete skipped questions
                 st.rerun()
-            st.stop()
-
+            st.stop() # Stop further execution until user goes back
 
         score = sum(q_values)
 
         input_df = pd.DataFrame([{
-            "Name": name,
+            "Name": name, # Included for context, but dropped before model prediction
             "Age": age,
             "FamilySupport": support,
             **{f"Q{i+1}": val for i, val in enumerate(q_values)},
@@ -414,23 +461,47 @@ elif menu == "Take Test":
         st.subheader("Personalized Tips")
         st.markdown(tips.get(pred_label, "Consult a professional immediately."))
 
-        # PDF Report
+        # PDF Report Generation
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Postpartum Depression Risk Prediction", ln=True, align='C')
+        pdf.set_font("Arial", size=16)
+        pdf.cell(200, 10, txt="Postpartum Depression Risk Prediction Report", ln=True, align='C')
         pdf.ln(10) # Add a line break for spacing
+
+        pdf.set_font("Arial", size=12)
         pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
         pdf.cell(200, 10, txt=f"Place: {place}", ln=True)
         pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
         pdf.cell(200, 10, txt=f"Support Level: {support}", ln=True)
         pdf.ln(5) # Small line break
         pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
+        
+        # Determine color for predicted risk level in PDF
+        risk_color = (40, 167, 69) # Green for Mild
+        if pred_label == "Moderate":
+            risk_color = (255, 193, 7) # Yellow for Moderate
+        elif pred_label == "Severe":
+            risk_color = (220, 53, 69) # Red for Severe
+        elif pred_label == "Profound":
+            risk_color = (139, 0, 0) # Dark Red for Profound
+
+        pdf.set_text_color(*risk_color) # Set text color
         pdf.cell(200, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
+        pdf.set_text_color(0, 0, 0) # Reset text color to black (default)
+
         pdf.ln(10) # Line break before note
         pdf.set_font("Arial", 'I', size=10) # Italic for the note
         pdf.multi_cell(0, 5, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)")
-
+        
+        # Add Personalized Tips to PDF
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', size=12)
+        pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
+        pdf.set_font("Arial", size=10)
+        # Split tips by newline and add each as a new cell
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'):
+            pdf.multi_cell(0, 5, txt=tip_line)
+        pdf.ln(5)
 
         # Add questions and answers to PDF
         pdf.ln(10)
@@ -440,16 +511,17 @@ elif menu == "Take Test":
         for i, (q_text, options) in enumerate(q_responses):
             if i < len(q_values): # Ensure we don't go out of bounds for q_values
                 selected_option_value = q_values[i]
-                selected_option_text = [k for k, v in options.items() if v == selected_option_value][0]
+                # Find the text of the selected option
+                selected_option_text = next((k for k, v in options.items() if v == selected_option_value), "N/A")
                 pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Your Answer: {selected_option_text} (Score: {selected_option_value})")
                 pdf.ln(2) # Small space between questions
             else:
-                pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Answer: Not provided (Error in previous questions)")
+                # Fallback for missing answers (shouldn't happen with the `if len(q_values) != 10` check)
+                pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Answer: Not provided")
                 pdf.ln(2)
 
-
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Crucial fix: dest='S' for outputting to BytesIO
+        pdf.output(pdf_buffer, dest='S') # FIX: dest='S' to output to BytesIO object
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -485,10 +557,6 @@ elif menu == "Result Explanation":
 # FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
-    # Reset feedback_submitted flag if user navigates away and comes back, or before showing form
-    if st.session_state.page == "Feedback" and st.session_state.feedback_submitted:
-        st.session_state.feedback_submitted = False # Allows resubmission after new input
-
     # Only show the form if feedback hasn't just been submitted in this rerun
     if not st.session_state.feedback_submitted:
         feedback_name = st.text_input("Your Name (Optional)", key="feedback_name_input")
@@ -504,7 +572,7 @@ elif menu == "Feedback":
                 st.warning("Please enter some feedback before submitting.")
     else:
         st.success("Your feedback has been submitted. Thank you!")
-        # You could also offer a "Submit More Feedback" button here if desired
+        # Offer a way to submit more feedback without navigating away
         if st.button("Submit More Feedback", key="submit_more_feedback"):
             st.session_state.feedback_submitted = False
             st.rerun()
