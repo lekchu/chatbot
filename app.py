@@ -260,19 +260,30 @@ for i, item in enumerate(nav_items):
 menu = st.session_state.page # Get the current page from session state
 
 # HOME
+# HOME
 if menu == "Home":
-    st.markdown(f"""
-    <div style="text-align: center; padding: 60px 20px;">
-        <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
-        <h3 class="home-subtitle">Empowering maternal health through smart technology</h3>
-    </div>
-    """, unsafe_allow_html=True)
+    # Create two columns for the home page layout
+    col_left, col_right = st.columns([2, 1]) # Adjust ratios as needed, e.g., [2, 1] for left wider than right
 
-    st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
-    if st.button("Start Test", key="home_start_button"):
-        st.session_state.page = "Take Test"
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+    with col_left:
+        st.markdown(f"""
+        <div style="text-align: center; padding: 60px 20px;">
+            <h1 class="home-title">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
+            <h3 class="home-subtitle">Empowering maternal health through smart technology</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
+        if st.button("Start Test", key="home_start_button"):
+            st.session_state.page = "Take Test"
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_right:
+        st.write(" ") # Add some space or placeholder if needed
+        # Replace 'path/to/your/gif.gif' with the actual filename and path of your GIF.
+        # For example, if your GIF is named 'maternity_care.gif' and is in the same directory as app.py:
+        st.image("maternity_care.gif", use_column_width=True) # use_column_width makes it fit the column width
 
 # TEST PAGE
 elif menu == "Take Test":
