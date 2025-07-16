@@ -12,64 +12,53 @@ try:
     le = joblib.load("label_encoder.pkl")
 except FileNotFoundError:
     st.error("Error: Model or label encoder file not found. Please ensure 'ppd_model_pipeline.pkl' and 'label_encoder.pkl' are in the same directory as 'app.py'.")
-    st.stop()
+    st.stop() # Stop the app if essential files are missing
 
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# --- Helper Function for Base64 Image Encoding ---
-def get_base64_image(image_path):
-    """Encodes an image to a base64 string for embedding in CSS."""
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode('utf-8')
-    except FileNotFoundError:
-        return ""
-
-# --- Dynamic CSS Generation with Background Image and Animations ---
-bg_image_base64 = get_base64_image("background.png") # Ensure 'background.png' exists if you want a background image
-
-custom_css = f"""
+# --- Custom CSS for Styling and Hiding Sidebar ---
+custom_css = """
 <style>
 /* Global App Styling - Dark Blue/Black Theme */
-.stApp {{
+.stApp {
     background-color: #0A1128; /* Deep dark blue */
     color: #FAFAFA; /* Light off-white for general text */
     font-family: 'Arial', sans-serif;
     animation: fadeIn 2s ease-in-out;
-}}
+}
 
 /* Hide the default Streamlit header, footer, and **crucially, the sidebar** */
-#MainMenu {{visibility: hidden;}}
-footer {{visibility: hidden;}}
-header {{visibility: hidden;}}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
 
 /* This targets the main sidebar container and hides it completely */
-[data-testid="stSidebar"] {{
+[data-testid="stSidebar"] {
     display: none !important; /* Use !important to override any other styles */
     width: 0 !important; /* Ensure it takes no space */
     min-width: 0 !important; /* Ensure it takes no space */
     max-width: 0 !important; /* Ensure it takes no space */
     overflow: hidden; /* Hide any overflowing content */
-}}
+}
 
 /* Custom Header / Top Navigation Bar */
-.top-nav-container {{
+.top-nav-container {
     background-color: #1C2C5B; /* Darker blue for header */
     padding: 10px 20px;
     display: flex; /* Use flexbox for horizontal layout */
     justify-content: center; /* Center the navigation items */
     gap: 20px; /* Space between navigation buttons */
     border-bottom: 2px solid #E84C3D; /* Accent line at the bottom of the nav */
-    position: sticky; /* or fixed */
+    position: sticky; /* Keeps it at the top when scrolling */
     top: 0;
     width: 100%;
     z-index: 1000; /* Ensure it stays on top of other content */
-}}
+}
 
-/* Style for individual buttons to be part of the top nav */
-/* Targeting the actual button element directly */
-.top-nav-button {{
+/* Style for Streamlit buttons within the top navigation bar context */
+/* This targets buttons generally, you might need more specific targeting if other buttons are affected */
+.stButton > button {
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
     border: none;
@@ -79,116 +68,111 @@ header {{visibility: hidden;}}
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
     border-radius: 5px;
-}}
+}
 
-.top-nav-button:hover {{
+.stButton > button:hover {
     background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateY(-2px); /* Subtle lift */
-}}
+}
 
-/* Style for the active (selected) navigation button */
-.top-nav-button.active {{
-    background-color: #E84C3D; /* Vibrant red for selected item */
-    color: white; /* White text for selected item */
-    font-weight: bold;
-}}
-
+/* For the active (selected) navigation button. Streamlit buttons don't have a direct "selected" class,
+   so we'll apply this via conditional styling if using st.markdown for buttons, or accept limited active state.
+   For st.button, we'll rely on reruns and default Streamlit styling. */
 
 /* Header/Title Styling */
-h1, h2, h3, h4, h5, h6 {{
+h1, h2, h3, h4, h5, h6 {
     color: #FAFAFA;
     text-align: center;
-}}
+}
 
 /* Specific Home Page Title */
-.home-title {{
+.home-title {
     font-size: 3.5em;
     color: #FAFAFA;
     text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
     animation: slideInFromLeft 1s ease-out;
-}}
+}
 
-.home-subtitle {{
+.home-subtitle {
     font-size: 1.6em;
     color: #E0E0E0;
     margin-top: -10px;
     animation: slideInFromRight 1s ease-out 0.3s forwards;
     opacity: 0;
-}}
+}
 
 /* Input Fields and Selectboxes */
 .stTextInput > div > div > input,
 .stSelectbox > div > div > div > div,
 .stNumberInput > div > div > input,
-.stTextArea > div > div > textarea {{
+.stTextArea > div > div > textarea {
     background-color: #2D416B;
     color: #FAFAFA;
     border: 1px solid #4A6B9C;
     border-radius: 5px;
     padding: 10px;
     width: 100%;
-}}
-.stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {{
+}
+.stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {
     color: #FAFAFA;
-}}
+}
 
 /* Specific styling for the selectbox dropdown to ensure text visibility */
-.stSelectbox div[data-baseweb="select"] > div {{
+.stSelectbox div[data-baseweb="select"] > div {
     width: 100%;
-}}
-.stSelectbox div[data-baseweb="select"] > div > div[role="button"] {{
+}
+.stSelectbox div[data-baseweb="select"] > div > div[role="button"] {
     width: 100%;
     padding-right: 25px;
-}}
-
+}
 
 /* Radio buttons (main content) */
-.stRadio > label {{
+.stRadio > label {
     color: #FAFAFA;
-}}
+}
 
 /* Success, Info, Warning messages */
-div[data-testid="stAlert"] {{
+div[data-testid="stAlert"] {
     border-radius: 8px;
     padding: 15px;
-}}
-div[data-testid="stAlert"].success {{
+}
+div[data-testid="stAlert"].success {
     background-color: #28a74520;
     color: #28a745;
     border-left: 5px solid #28a745;
-}}
-div[data-testid="stAlert"].info {{
+}
+div[data-testid="stAlert"].info {
     background-color: #17a2b820;
     color: #17a2b8;
     border-left: 5px solid #17a2b8;
-}}
-div[data-testid="stAlert"].warning {{
+}
+div[data-testid="stAlert"].warning {
     background-color: #ffc10720;
     color: #ffc107;
     border-left: 5px solid #ffc107;
-}}
+}
 
 /* Table styling in Result Explanation */
-.stMarkdown table {{
+.stMarkdown table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
     background-color: #1C2C5B;
     color: #FAFAFA;
-}}
-.stMarkdown th, .stMarkdown td {{
+}
+.stMarkdown th, .stMarkdown td {
     border: 1px solid #4A6B9C;
     padding: 10px;
     text-align: left;
-}}
-.stMarkdown th {{
+}
+.stMarkdown th {
     background-color: #2D416B;
     font-weight: bold;
-}}
+}
 
 /* PDF Download Link Styling */
-a[download] {{
+a[download] {
     display: inline-block;
     background-color: #17A2B8;
     color: white;
@@ -197,34 +181,34 @@ a[download] {{
     text-decoration: none;
     margin-top: 20px;
     transition: background-color 0.3s ease;
-}}
-a[download]:hover {{
+}
+a[download]:hover {
     background-color: #138496;
-}}
+}
 
 /* Custom note styling */
-.custom-note {{
+.custom-note {
     color: #ccc;
     font-style: italic;
     text-align: center;
     margin-top: 20px;
-}}
+}
 
 /* Keyframe Animations for Home Page */
-@keyframes fadeIn {{
-    from {{ opacity: 0; }}
-    to {{ opacity: 1; }}
-}}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
-@keyframes slideInFromLeft {{
-    from {{ transform: translateX(-100%); opacity: 0; }}
-    to {{ transform: translateX(0); opacity: 1; }}
-}}
+@keyframes slideInFromLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
 
-@keyframes slideInFromRight {{
-    from {{ transform: translateX(100%); opacity: 0; }}
-    to {{ transform: translateX(0); opacity: 1; }}
-}}
+@keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
 
 </style>
 """
@@ -247,39 +231,30 @@ if "name" not in st.session_state:
     st.session_state.name = ""
 if "place" not in st.session_state:
     st.session_state.place = ""
-# Flag for feedback submission to prevent re-displaying success message on rerun
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
-
 
 # --- TOP Navigation Bar Implementation ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Start nav container
-for item in nav_items:
-    # Use a direct st.button for each item.
-    # We will apply active styling by adding a class if it's the current page.
-    # Note: Streamlit's st.button does not directly accept 'class' or 'id' for custom CSS.
-    # The best way to style is via its native CSS selectors or by wrapping it in st.markdown.
-    # For active state, we'll use a hack or just rely on the button's hover state for simplicity.
-    
-    # For a more robust active state, we need to create custom HTML for buttons
-    # or rely on Streamlit's internal element IDs, which can be unstable.
-    # For now, let's just use the default button and its hover state, as direct
-    # active class injection for st.button is problematic.
-    
-    # Alternatively, you can render custom HTML buttons for full control:
-    is_active = " active" if st.session_state.page == item else ""
-    st.markdown(f"""
-    <button class="top-nav-button{is_active}" onclick="window.parent.postMessage({{
-        streamlit: {{type: 'SET_PAGE_STATE', payload: {{page: '{item}'}}}}
-    }}, '*')">
-        {item}
-    </button>
-    """, unsafe_allow_html=True)
+# Use st.columns to lay out buttons horizontally
+cols = st.columns(len(nav_items))
+for i, item in enumerate(nav_items):
+    with cols[i]:
+        # Determine button style based on current page
+        button_style = ""
+        if st.session_state.page == item:
+            # Apply a distinct style for the active button
+            button_style = "background-color: #E84C3D; color: white; font-weight: bold;"
+        
+        # Streamlit buttons don't directly support CSS classes or complex styling via st.button arguments.
+        # The most reliable way for active state is to use st.markdown with custom HTML for buttons.
+        # However, for simplicity and to avoid JS hacks, we'll just use Streamlit's native button and let
+        # the rerun handle the state change. Custom CSS for hover is global.
 
-st.markdown("</div>", unsafe_allow_html=True) # End nav container
-
+        if st.button(item, key=f"top_nav_button_{item}", help=f"Go to {item} page"):
+            st.session_state.page = item
+            st.rerun()
 
 # --- Main Content Rendering ---
 menu = st.session_state.page # Get the current page from session state
@@ -371,12 +346,16 @@ elif menu == "Take Test":
             if st.button("Back", key=f"back_button_{idx}"):
                 if idx > 1:
                     st.session_state.question_index -= 1
+                    # Ensure responses list is also managed correctly when going back
+                    if st.session_state.responses:
+                        st.session_state.responses.pop()
                     st.rerun()
                 else:
                     st.session_state.question_index = 0
                     st.rerun()
         with col2:
             if st.button("Next", key=f"next_button_{idx}"):
+                # Update response if already exists, otherwise append
                 if len(st.session_state.responses) < idx:
                     st.session_state.responses.append(options[choice])
                 else:
@@ -443,10 +422,10 @@ elif menu == "Take Test":
         st.plotly_chart(fig, use_container_width=True)
 
         tips = {
-            "Mild": "- Stay active\n- Eat well\n- Talk to someone\n- Practice self-care",
-            "Moderate": "- Monitor symptoms\n- Join a group\n- Share with family\n- Avoid isolation",
-            "Severe": "- Contact a therapist\n- Alert family\n- Prioritize mental health\n- Reduce stressors",
-            "Profound": "- Seek urgent psychiatric help\n- Talk to someone now\n- Call helpline\n- Avoid being alone"
+            "Mild": "- Stay active\\n- Eat well\\n- Talk to someone\\n- Practice self-care",
+            "Moderate": "- Monitor symptoms\\n- Join a group\\n- Share with family\\n- Avoid isolation",
+            "Severe": "- Contact a therapist\\n- Alert family\\n- Prioritize mental health\\n- Reduce stressors",
+            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n- Avoid being alone"
         }
 
         st.subheader("Personalized Tips")
@@ -467,17 +446,17 @@ elif menu == "Take Test":
         pdf.ln(5)
         pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
         
-        risk_color = (40, 167, 69)
+        risk_color = (40, 167, 69) # Green for Mild
         if pred_label == "Moderate":
-            risk_color = (255, 193, 7)
+            risk_color = (255, 193, 7) # Yellow for Moderate
         elif pred_label == "Severe":
-            risk_color = (220, 53, 69)
+            risk_color = (220, 53, 69) # Red for Severe
         elif pred_label == "Profound":
-            risk_color = (139, 0, 0)
+            risk_color = (139, 0, 0) # Dark Red for Profound
 
         pdf.set_text_color(*risk_color)
         pdf.cell(200, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
-        pdf.set_text_color(0, 0, 0)
+        pdf.set_text_color(0, 0, 0) # Reset text color to black for subsequent text
 
         pdf.ln(10)
         pdf.set_font("Arial", 'I', size=10)
@@ -487,7 +466,7 @@ elif menu == "Take Test":
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'):
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\\n'): # Use '\\n' here
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
@@ -506,7 +485,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Corrected dest parameter
+        pdf.output(pdf_buffer, dest='S').encode('latin-1') # Corrected dest parameter and encoding
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -523,7 +502,6 @@ elif menu == "Take Test":
             st.session_state.page = "Home"
             st.rerun()
 
-# RESULT EXPLANATION
 elif menu == "Result Explanation":
     st.header("Understanding Risk Levels")
     st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
@@ -537,8 +515,6 @@ elif menu == "Result Explanation":
     """)
     st.markdown("<p class='custom-note'>The numerical values (0, 1, 2, 3) correspond to the categories 'Mild', 'Moderate', 'Severe', and 'Profound' respectively, as mapped by the model's output.</p>", unsafe_allow_html=True)
 
-
-# FEEDBACK
 elif menu == "Feedback":
     st.header("Share Your Feedback")
     if not st.session_state.feedback_submitted:
@@ -559,7 +535,6 @@ elif menu == "Feedback":
             st.session_state.feedback_submitted = False
             st.rerun()
 
-# RESOURCES
 elif menu == "Resources":
     st.header("Helpful Links and Support")
     st.markdown("""
