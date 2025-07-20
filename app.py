@@ -17,15 +17,15 @@ except FileNotFoundError:
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# --- Custom CSS for Styling and Hiding Sidebar ---
+# --- Custom CSS for Styling and Hiding Sidebar (Combined all styling here) ---
 custom_css = """
 <style>
-/* Global App Styling - Dark Blue/Black Theme */
+/* Global App Styling - Deep Blue/Black Theme with Fade-in Effect */
 .stApp {
     background-color: #0A1128; /* Deep dark blue */
     color: #FAFAFA; /* Light off-white for general text */
     font-family: 'Arial', sans-serif;
-    animation: fadeIn 2s ease-in-out;
+    animation: fadeIn 2s ease-in-out; /* Apply fade-in animation */
 }
 
 /* Hide the default Streamlit header, footer, and **crucially, the sidebar** */
@@ -57,7 +57,6 @@ header {visibility: hidden;}
 }
 
 /* Style for Streamlit buttons within the top navigation bar context */
-/* Target specific Streamlit button elements to apply custom styles */
 .stButton > button {
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
@@ -75,11 +74,6 @@ header {visibility: hidden;}
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateY(-2px); /* Subtle lift */
 }
-
-/* For the active (selected) navigation button */
-/* Streamlit buttons don't have a direct "selected" class, so we'll apply this via conditional styling if using st.markdown for buttons, or accept limited active state. */
-/* If you want a more distinct "active" button, consider using st.markdown with raw HTML buttons and managing an active CSS class yourself. For now, we use button_label to change text color. */
-
 
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {
@@ -195,7 +189,7 @@ a[download]:hover {
     margin-top: 20px;
 }
 
-/* Keyframe Animations for Home Page */
+/* Keyframe Animations for Home Page and overall app*/
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -239,15 +233,21 @@ if "feedback_submitted" not in st.session_state:
 # --- TOP Navigation Bar Implementation ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-# Use st.columns to lay out buttons horizontally
 st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Container for the nav bar
 cols = st.columns(len(nav_items))
 for i, item in enumerate(nav_items):
     with cols[i]:
-        # Use HTML within st.button for coloring, as direct styling on st.button itself is limited.
-        # This is a common workaround for custom button appearance in Streamlit.
-        button_html = f"<span style='color:{'#E84C3D' if st.session_state.page == item else 'white'};'>{item}</span>"
-        if st.button(button_html, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
+        # CORRECTED: The button label is now a simple string.
+        # The color change for the active item is handled by CSS based on a custom class or direct style.
+        # Here, we'll use a direct style within the button if 'item' is the current page,
+        # otherwise, it's a regular string, and the CSS for .stButton > button handles default styling.
+        button_label_style = f"color:#E84C3D;" if st.session_state.page == item else ""
+        button_label = f"<span style='{button_label_style}'>{item}</span>"
+
+        # The unsafe_allow_html=True is now used correctly if the label itself is HTML.
+        # The TypeError happened because unsafe_allow_html was passed as a keyword arg to st.button directly.
+        # It's only an argument of st.markdown, st.write, etc., when displaying HTML.
+        if st.button(button_label, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
             st.session_state.page = item
             st.rerun()
 st.markdown("</div>", unsafe_allow_html=True) # Close the container
@@ -279,8 +279,7 @@ if menu == "Home":
         st.write(" ") # Add some space or placeholder if needed for alignment
         # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
         # Ensure your GIF is in the same directory as app.py, or provide a relative path.
-        # Changed use_column_width to use_container_width
-        st.image("maternity_care.gif", use_container_width=True) # This should display the GIF
+        st.image("maternity_care.gif", use_container_width=True)
 
 
 # TEST PAGE
@@ -434,11 +433,11 @@ elif menu == "Take Test":
             "Mild": "- Stay active\\n- Eat well\\n- Talk to someone\\n- Practice self-care",
             "Moderate": "- Monitor symptoms\\n- Join a group\\n- Share with family\\n- Avoid isolation",
             "Severe": "- Contact a therapist\\n- Alert family\\n- Prioritize mental health\\n- Reduce stressors",
-            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n-- Avoid being alone"
+            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n- Avoid being alone"
         }
 
         st.subheader("Personalized Tips")
-        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n')) # Corrected: use .replace('\\n', '\n') for markdown
+        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
         pdf = FPDF()
@@ -494,7 +493,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Corrected dest parameter for in-memory output
+        pdf.output(pdf_buffer, dest='S')
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
