@@ -29,7 +29,7 @@ except Exception as e:
     st.error(f"Error loading model or encoder: {e}. Please check your .pkl files.")
     st.stop()
 
-st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered") # Changed layout to centered for better focus
+st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered")
 
 # --- Session State Initialization ---
 # Initialize session state variables if they don't exist
@@ -138,19 +138,27 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     pdf.cell(0, 15, txt="Postpartum Depression Risk Prediction Report", ln=True, align='C')
     pdf.ln(10)
 
+    # Helper function to sanitize text for FPDF
+    def sanitize_text_for_pdf(text):
+        if isinstance(text, (int, float)): # Ensure numbers are converted to string
+            text = str(text)
+        # Attempt to encode/decode to handle non-ASCII characters
+        # 'replace' will put '?' for unencodable chars, 'ignore' will remove them
+        return text.encode('latin-1', 'replace').decode('latin-1')
+
     pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, txt=f"Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
-    pdf.cell(0, 10, txt=f"Name: {name}", ln=True)
-    pdf.cell(0, 10, txt=f"Place: {place}", ln=True)
-    pdf.cell(0, 10, txt=f"Age: {age}", ln=True)
-    pdf.cell(0, 10, txt=f"Family Support Level: {support}", ln=True)
-    pdf.cell(0, 10, txt=f"Total EPDS Score: {score}/30", ln=True) # Max score is 3*10 = 30
+    pdf.cell(0, 10, txt=f"Date: {sanitize_text_for_pdf(pd.Timestamp.now().strftime('%Y-%m-%d %H:%M'))}", ln=True)
+    pdf.cell(0, 10, txt=f"Name: {sanitize_text_for_pdf(name)}", ln=True)
+    pdf.cell(0, 10, txt=f"Place: {sanitize_text_for_pdf(place)}", ln=True)
+    pdf.cell(0, 10, txt=f"Age: {sanitize_text_for_pdf(age)}", ln=True)
+    pdf.cell(0, 10, txt=f"Family Support Level: {sanitize_text_for_pdf(support)}", ln=True)
+    pdf.cell(0, 10, txt=f"Total EPDS Score: {sanitize_text_for_pdf(score)}/30", ln=True)
     pdf.ln(5)
 
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, txt="Predicted Risk Level:", ln=True)
     pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, txt=pred_label, ln=True)
+    pdf.cell(0, 10, txt=sanitize_text_for_pdf(pred_label), ln=True)
     pdf.ln(5)
 
     pdf.set_font("Arial", 'B', 14)
@@ -159,7 +167,7 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     # Add tips line by line
     for line in tips_text.split('\n'):
         if line.strip(): # Avoid empty lines
-            pdf.multi_cell(0, 7, txt=line.strip())
+            pdf.multi_cell(0, 7, txt=sanitize_text_for_pdf(line.strip()))
     pdf.ln(5)
 
     pdf.set_font("Arial", 'I', 10)
@@ -271,25 +279,60 @@ def take_test_page():
         if len(q_values) != len(QUESTIONS):
             st.error("It seems some questions were skipped. Please go back and complete all questions.")
             if st.button("Go back to questions"):
-                st.session_state.question_index = 1 # Go back to the first question
+                st.session_state.question_index = 1
                 st.rerun()
             return
 
-        input_df = pd.DataFrame([{
-            "Age": age,
-            "FamilySupport": support,
-            **{f"Q{i+1}": val for i, val in enumerate(q_values)},
-            "EPDS_Score": score
-        }])
+        # Prepare the data dictionary
+        input_data = {
+            "Age": [age],
+            "FamilySupport": [support], # Still passing the string initially
+            "EPDS_Score": [score]
+        }
+        # Add Q1-Q10 values
+        for i, val in enumerate(q_values):
+            input_data[f"Q{i+1}"] = [val]
 
-        # Encode FamilySupport before prediction
-        input_df['FamilySupport'] = input_df['FamilySupport'].map({"High": 0, "Medium": 1, "Low": 2})
+        input_df = pd.DataFrame(input_data)
+
+        # --- Re-introducing manual encoding for FamilySupport ---
+        # This is based on the assumption that your specific model pipeline expects numbers (0,1,2)
+        # for 'FamilySupport', rather than handling the string internally.
+        family_support_mapping = {"High": 0, "Medium": 1, "Low": 2}
+        input_df['FamilySupport'] = input_df['FamilySupport'].map(family_support_mapping)
+
+        # --- Robust Type Conversion and NaN Handling for all numeric columns ---
+        # This is a defensive measure to ensure all numeric columns are clean
+        numeric_cols = [f"Q{i+1}" for i in range(len(QUESTIONS))] + ["Age", "EPDS_Score"]
+        for col in numeric_cols:
+            if col in input_df.columns:
+                # Convert to numeric, coerce errors (turn non-convertible to NaN),
+                # fill any NaNs with 0 (or a suitable default), then convert to int
+                input_df[col] = pd.to_numeric(input_df[col], errors='coerce').fillna(0).astype(int)
+
+        # --- IMPORTANT DEBUGGING STEPS (KEEP THESE!) ---
+        # These will display information about your DataFrame
+        # just before the prediction, which is crucial for diagnosing errors.
+        st.subheader("--- Debugging Info (for developer) ---")
+        st.write("DataFrame before prediction:")
+        st.dataframe(input_df) # Use st.dataframe for better display
+        st.write("DataFrame dtypes:")
+        st.write(input_df.dtypes)
+        st.write("DataFrame info:")
+        buffer = BytesIO()
+        input_df.info(buf=buffer)
+        st.text(buffer.getvalue().decode('utf-8'))
+        st.write("Any NaN values in DataFrame?")
+        st.write(input_df.isnull().sum())
+        st.subheader("--- End Debugging Info ---")
+        # --- END IMPORTANT DEBUGGING STEPS ---
 
         try:
             pred_encoded = model.predict(input_df)[0]
             pred_label = le.inverse_transform([pred_encoded])[0]
         except Exception as e:
-            st.error(f"Error during prediction: {e}. Please ensure the model pipeline and data types are correct.")
+            st.error(f"Error during prediction: {e}. This likely means the input data types or columns are not what the model expects.")
+            st.warning("Please check the 'Debugging Info' above and compare it to how your model was trained.")
             pred_label = "Error" # Fallback
             pred_encoded = 0 # Fallback for gauge
 
@@ -446,7 +489,7 @@ def resources_page():
     * **World Health Organization (WHO) - Maternal Mental Health:** [Learn about global initiatives and information on maternal mental health.](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     * **Postpartum Support International (PSI):** [A leading organization dedicated to helping women and families worldwide affected by perinatal mood and anxiety disorders.](https://www.postpartum.net/) (Offers helpline, support groups, and resources)
     * **PPD Moms (Online Support Community):** [An online community for mothers experiencing PPD.](https://www.ppdmoms.com/) (Check for updated links or similar communities)
-    * **National Alliance on Mental Illness (NAMI):** [Provides advocacy, education, support, and public awareness for people affected by mental illness.](https://www.nami.org/Home)
+    * **National Alliance on Mental Illness (NAMI): [Provides advocacy, education, support, and public awareness for people affected by mental illness.](https://www.nami.org/Home)
     """)
     st.markdown("<p style='font-style:italic; color:#aaa;'>Note: Please verify the contact details and website links as they may change over time.</p>", unsafe_allow_html=True)
 
@@ -475,17 +518,6 @@ elif menu == "Feedback":
     feedback_page()
 elif menu == "Resources":
     resources_page()
-
-# 👶 Add bottom-centered image (Moved to sidebar for better aesthetic, or can keep here if preferred in main area)
-# If you want it *below* the main content area always, keep this block:
-# with open(IMAGE_PATH, "rb") as f:
-#     image_data = f.read()
-# b64_image = base64.b64encode(image_data).decode()
-# st.markdown(f"""
-# <div class="bottom-image">
-#     <img src="data:image/png;base64,{b64_image}" width="250"/>
-# </div>
-# """, unsafe_allow_html=True)
 
 # Add a subtle footer
 st.markdown("<hr style='border:1px solid #002b5c;'>", unsafe_allow_html=True)
