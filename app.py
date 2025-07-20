@@ -13,11 +13,10 @@ le = joblib.load("label_encoder.pkl")
 # Set page config
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Set up default session state
+# Default session state
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
-# Set default user session state
 for var, default in {
     'question_index': 0,
     'responses': [],
@@ -29,66 +28,54 @@ for var, default in {
     if var not in st.session_state:
         st.session_state[var] = default
 
-# CSS styling for top nav and background
+# Style: background, nav buttons, image
 st.markdown("""
 <style>
-body {
-    background-color: #001f3f;
-}
-.navbar {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    padding: 20px;
-    background-color: #004080;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-.navbar button {
-    background-color: #ffffff;
-    border: none;
-    padding: 10px 20px;
-    font-weight: bold;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.navbar button:hover {
-    background-color: #ddd;
-}
-.right-image {
-    position: fixed;
-    top: 100px;
-    right: 20px;
-    width: 200px;
-    z-index: -1;
-}
 .stApp {
     background-color: #001f3f;
     color: white;
 }
+.nav-button {
+    background-color: white;
+    color: #001f3f;
+    border-radius: 8px;
+    padding: 0.5em 1.5em;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+.nav-button:hover {
+    background-color: #ccc;
+}
+.right-image {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    width: 220px;
+    z-index: -1;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# Top navigation bar
-pages = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
-st.markdown('<div class="navbar">' +
-    ''.join([f'<form action="" method="post" style="display:inline;"><button name="nav" type="submit" value="{p}">{p}</button></form>' for p in pages]) +
-    '</div>', unsafe_allow_html=True)
+# Top navigation using Streamlit columns
+st.write("")  # spacer
+nav_cols = st.columns(5)
+nav_labels = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-# Set page state from clicked nav button
-nav = st.experimental_get_query_params().get("nav")
-if nav and nav[0] in pages:
-    st.session_state.page = nav[0]
-elif "nav" in st.session_state:
-    st.session_state.page = st.session_state.nav
+for i, label in enumerate(nav_labels):
+    if nav_cols[i].button(label, key=label):
+        st.session_state.page = label
 
-# Add maternity care image on the right
-st.markdown('<img src="https://raw.githubusercontent.com/yourusername/yourrepo/main/maternity_care.png" class="right-image">', unsafe_allow_html=True)
+# Persistent image (local file as base64)
+with open("maternity_care.png", "rb") as f:
+    image_data = f.read()
+b64_image = base64.b64encode(image_data).decode()
+st.markdown(f'<img src="data:image/png;base64,{b64_image}" class="right-image">', unsafe_allow_html=True)
 
-# Get current menu
+# Get selected page
 menu = st.session_state.page
 
-# Home Page
+# HOME
 if menu == "Home":
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
@@ -96,12 +83,11 @@ if menu == "Home":
         <h3 style="font-size: 1.6em; color: white;">Empowering maternal health through smart technology</h3>
     </div>
     """, unsafe_allow_html=True)
-
     if st.button("Start Test"):
         st.session_state.page = "Take Test"
         st.rerun()
 
-# Questionnaire Page
+# TAKE TEST
 elif menu == "Take Test":
     st.header("Questionnaire")
     idx = st.session_state.question_index
@@ -205,7 +191,7 @@ elif menu == "Take Test":
         st.subheader("Personalized Tips")
         st.markdown(tips.get(pred_label, "Consult a professional immediately."))
 
-        # PDF Report
+        # PDF generation
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -219,7 +205,7 @@ elif menu == "Take Test":
 
         pdf_buffer = BytesIO()
         pdf.output(pdf_buffer)
-        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode()
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
@@ -228,7 +214,7 @@ elif menu == "Take Test":
                 st.session_state.pop(key, None)
             st.rerun()
 
-# Result Explanation Page
+# RESULT EXPLANATION
 elif menu == "Result Explanation":
     st.header("Understanding Risk Levels")
     st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale).")
@@ -241,7 +227,7 @@ elif menu == "Result Explanation":
     | Profound   | Needs professional help urgently |
     """)
 
-# Feedback Page
+# FEEDBACK
 elif menu == "Feedback":
     st.header("Share Feedback")
     name = st.text_input("Your Name")
@@ -249,7 +235,7 @@ elif menu == "Feedback":
     if st.button("Submit"):
         st.success("Thank you for your valuable feedback!")
 
-# Resources Page
+# RESOURCES
 elif menu == "Resources":
     st.header("Helpful Links and Support")
     st.markdown("""
