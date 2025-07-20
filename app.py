@@ -434,7 +434,7 @@ elif menu == "Take Test":
             "Mild": "- Stay active\\n- Eat well\\n- Talk to someone\\n- Practice self-care",
             "Moderate": "- Monitor symptoms\\n- Join a group\\n- Share with family\\n- Avoid isolation",
             "Severe": "- Contact a therapist\\n- Alert family\\n- Prioritize mental health\\n- Reduce stressors",
-            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n- Avoid being alone"
+            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n-- Avoid being alone"
         }
 
         st.subheader("Personalized Tips")
