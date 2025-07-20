@@ -29,7 +29,7 @@ except Exception as e:
     st.error(f"Error loading model or encoder: {e}. Please check your .pkl files.")
     st.stop()
 
-st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered") # Changed layout to centered for better focus
+st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered")
 
 # --- Session State Initialization ---
 # Initialize session state variables if they don't exist
@@ -275,21 +275,43 @@ def take_test_page():
                 st.rerun()
             return
 
-        input_df = pd.DataFrame([{
-            "Age": age,
-            "FamilySupport": support,
-            **{f"Q{i+1}": val for i, val in enumerate(q_values)},
-            "EPDS_Score": score
-        }])
+        # Prepare the data dictionary
+        input_data = {
+            "Age": [age],
+            "FamilySupport": [support], # Pass the string value directly
+            "EPDS_Score": [score]
+        }
+        # Add Q1-Q10 values
+        for i, val in enumerate(q_values):
+            input_data[f"Q{i+1}"] = [val]
 
-        # Encode FamilySupport before prediction
-        input_df['FamilySupport'] = input_df['FamilySupport'].map({"High": 0, "Medium": 1, "Low": 2})
+        input_df = pd.DataFrame(input_data)
+
+        # --- IMPORTANT DEBUGGING STEPS ---
+        # These will display information about your DataFrame
+        # just before the prediction, which is crucial for diagnosing errors.
+        st.subheader("--- Debugging Info (for developer) ---")
+        st.write("DataFrame before prediction:")
+        st.dataframe(input_df) # Use st.dataframe for better display
+        st.write("DataFrame dtypes:")
+        st.write(input_df.dtypes)
+        st.write("DataFrame info:")
+        buffer = BytesIO()
+        input_df.info(buf=buffer)
+        st.text(buffer.getvalue().decode('utf-8'))
+        st.write("Any NaN values in DataFrame?")
+        st.write(input_df.isnull().sum())
+        st.subheader("--- End Debugging Info ---")
+        # --- END IMPORTANT DEBUGGING STEPS ---
 
         try:
+            # The pipeline 'model' should now correctly process 'FamilySupport'
+            # (assuming it has an internal encoder for it)
             pred_encoded = model.predict(input_df)[0]
             pred_label = le.inverse_transform([pred_encoded])[0]
         except Exception as e:
-            st.error(f"Error during prediction: {e}. Please ensure the model pipeline and data types are correct.")
+            st.error(f"Error during prediction: {e}. This likely means the input data types or columns are not what the model expects.")
+            st.warning("Please check the 'Debugging Info' above and compare it to how your model was trained.")
             pred_label = "Error" # Fallback
             pred_encoded = 0 # Fallback for gauge
 
@@ -475,17 +497,6 @@ elif menu == "Feedback":
     feedback_page()
 elif menu == "Resources":
     resources_page()
-
-# 👶 Add bottom-centered image (Moved to sidebar for better aesthetic, or can keep here if preferred in main area)
-# If you want it *below* the main content area always, keep this block:
-# with open(IMAGE_PATH, "rb") as f:
-#     image_data = f.read()
-# b64_image = base64.b64encode(image_data).decode()
-# st.markdown(f"""
-# <div class="bottom-image">
-#     <img src="data:image/png;base64,{b64_image}" width="250"/>
-# </div>
-# """, unsafe_allow_html=True)
 
 # Add a subtle footer
 st.markdown("<hr style='border:1px solid #002b5c;'>", unsafe_allow_html=True)
