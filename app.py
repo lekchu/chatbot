@@ -8,6 +8,7 @@ import base64
 
 # --- Load Model and Label Encoder ---
 try:
+    # Ensure these files are in the same directory as app.py
     model = joblib.load("ppd_model_pipeline.pkl")
     le = joblib.load("label_encoder.pkl")
 except FileNotFoundError:
@@ -18,6 +19,9 @@ except FileNotFoundError:
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
 # --- Custom CSS for Styling and Hiding Sidebar (Combined all styling here) ---
+# This CSS makes the navigation "invisible" in the sense that it's highly customized
+# and replaces the default Streamlit look, making it appear seamlessly integrated
+# rather than as standard Streamlit buttons.
 custom_css = """
 <style>
 /* Global App Styling - Deep Blue/Black Theme with Fade-in Effect */
@@ -56,8 +60,7 @@ header {visibility: hidden;}
     z-index: 1000; /* Ensure it stays on top of other content */
 }
 
-/* Style for Streamlit buttons within the top navigation bar context */
-/* This now applies to the simulated buttons made with <a> tags within the top-nav-container */
+/* Style for the simulated buttons made with <a> tags within the top-nav-container */
 .top-nav-container a {
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
@@ -253,7 +256,9 @@ for i, item in enumerate(nav_items):
         active_class = " active" if is_active else ""
         
         # Create an HTML anchor tag acting as a button
-        # On click, it sets the session state variable and reruns the app.
+        # The onclick JavaScript updates the session state 'page' variable
+        # and scrolls to the top of the Streamlit app. This bypasses
+        # the 'unsafe_allow_html' issue with st.button.
         st.markdown(
             f'<a href="#" onclick="window.parent.document.querySelector(\'[data-testid=\"stAppViewContainer\"]\').scrollTop = 0; document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set and document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set({{page: \'{item}\'}});" class="nav-button{active_class}">{item}</a>',
             unsafe_allow_html=True
@@ -279,7 +284,7 @@ if menu == "Home":
         """, unsafe_allow_html=True)
 
         st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
-        # Using a regular st.button for "Start Test"
+        # Using a regular st.button for "Start Test" - this should not cause the TypeError
         if st.button("Start Test", key="home_start_button"):
             st.session_state.page = "Take Test"
             st.rerun()
@@ -289,11 +294,10 @@ if menu == "Home":
         st.write(" ") # Add some space or placeholder if needed for alignment
         # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
         # Ensure your GIF is in the same directory as app.py, or provide a relative path.
-        # Make sure you have 'maternity_care.gif' in your project directory
         try:
             st.image("maternity_care.gif", use_container_width=True)
         except FileNotFoundError:
-            st.warning("maternity_care.gif not found. Please ensure it's in the same directory.")
+            st.warning("maternity_care.gif not found. Please ensure it's in the same directory as app.py.")
 
 
 # TEST PAGE
@@ -452,6 +456,7 @@ elif menu == "Take Test":
 
         st.subheader("Personalized Tips")
         # Use st.markdown and replace '\n' for proper rendering of bullet points
+        # The .replace('\\n', '\n') handles cases where the newline might be escaped in the string.
         st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
@@ -510,7 +515,7 @@ elif menu == "Take Test":
 
         pdf_buffer = BytesIO()
         pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
-        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+        b64_pdf = base664.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
