@@ -18,75 +18,17 @@ except FileNotFoundError:
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# --- Custom CSS for Styling and Hiding Streamlit Defaults ---
-# This CSS hides the default Streamlit sidebar, header, and footer.
-# It also styles the custom top navigation to appear integrated ("invisible" as in seamless).
+# --- Custom CSS for Styling ---
+# This CSS sets the background color and text colors.
+# It does NOT hide the sidebar, as we are now using it for navigation.
 custom_css = """
 <style>
-/* Global App Styling - Deep Blue/Black Theme with Fade-in Effect */
+/* Global App Styling */
 .stApp {
     background-color: #0A1128; /* Deep dark blue */
     color: #FAFAFA; /* Light off-white for general text */
     font-family: 'Arial', sans-serif;
-    animation: fadeIn 2s ease-in-out; /* Apply fade-in animation */
 }
-
-/* Hide the default Streamlit header, footer, and **crucially, the sidebar** */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-
-/* This targets the main sidebar container and hides it completely */
-[data-testid="stSidebar"] {
-    display: none !important; /* Use !important to override any other styles */
-    width: 0 !important; /* Ensure it takes no space */
-    min-width: 0 !important; /* Ensure it takes no space */
-    max-width: 0 !important; /* Ensure it takes no space */
-    overflow: hidden; /* Hide any overflowing content */
-}
-
-/* Custom Header / Top Navigation Bar */
-.top-nav-container {
-    background-color: #1C2C5B; /* Darker blue for header */
-    padding: 10px 20px;
-    display: flex; /* Use flexbox for horizontal layout */
-    justify-content: center; /* Center the navigation items */
-    gap: 20px; /* Space between navigation buttons */
-    border-bottom: 2px solid #E84C3D; /* Accent line at the bottom of the nav */
-    position: sticky; /* Keeps it at the top when scrolling */
-    top: 0;
-    width: 100%;
-    z-index: 1000; /* Ensure it stays on top of other content */
-}
-
-/* Style for the simulated buttons made with <a> tags within the top-nav-container */
-.top-nav-container a {
-    background-color: transparent; /* Make buttons transparent initially */
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-size: 1.1em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
-    border-radius: 5px;
-    text-decoration: none; /* Remove underline from links */
-    display: inline-block; /* Allows padding and width for anchor tags */
-}
-
-.top-nav-container a:hover {
-    background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
-    color: #E84C3D; /* Highlight text with accent color */
-    transform: translateY(-2px); /* Subtle lift */
-}
-
-/* Style for the active/selected navigation item */
-.top-nav-container a.active {
-    color: #E84C3D; /* Accent color for the active item */
-    /* You could also add a background or border here if desired */
-    /* background-color: rgba(232, 76, 61, 0.1); */
-}
-
 
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {
@@ -99,15 +41,12 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 3.5em;
     color: #FAFAFA;
     text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-    animation: slideInFromLeft 1s ease-out;
 }
 
 .home-subtitle {
     font-size: 1.6em;
     color: #E0E0E0;
     margin-top: -10px;
-    animation: slideInFromRight 1s ease-out 0.3s forwards;
-    opacity: 0;
 }
 
 /* Input Fields and Selectboxes */
@@ -124,15 +63,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 .stTextInput > label, .stSelectbox > label, .stSlider > label, .stTextArea > label {
     color: #FAFAFA;
-}
-
-/* Specific styling for the selectbox dropdown to ensure text visibility */
-.stSelectbox div[data-baseweb="select"] > div {
-    width: 100%;
-}
-.stSelectbox div[data-baseweb="select"] > div > div[role="button"] {
-    width: 100%;
-    padding-right: 25px;
 }
 
 /* Radio buttons (main content) */
@@ -202,21 +132,28 @@ a[download]:hover {
     margin-top: 20px;
 }
 
-/* Keyframe Animations for Home Page and overall app*/
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* Streamlit Sidebar specific styling */
+[data-testid="stSidebar"] {
+    background-color: #1C2C5B; /* Darker blue for sidebar background */
+    color: #FAFAFA; /* Text color for sidebar */
 }
 
-@keyframes slideInFromLeft {
-    from { transform: translateX(-100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+/* Radio buttons in sidebar */
+[data-testid="stSidebar"] .stRadio > label {
+    color: #FAFAFA; /* Ensure labels are visible */
 }
 
-@keyframes slideInFromRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+/* Active radio button in sidebar */
+[data-testid="stSidebar"] .stRadio div[role="radio"][aria-checked="true"] {
+    background-color: #E84C3D; /* Accent color for active item background */
+    color: white; /* White text for active item */
+    border-radius: 5px;
+    padding: 5px 10px;
 }
+[data-testid="stSidebar"] .stRadio div[role="radio"][aria-checked="false"]:hover {
+    background-color: rgba(232, 76, 61, 0.2); /* Light accent on hover for inactive items */
+}
+
 
 </style>
 """
@@ -242,48 +179,22 @@ if "place" not in st.session_state:
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
+# --- Sidebar Navigation ---
+# This is the standard Streamlit sidebar navigation
+st.sidebar.title("Navigate")
+st.session_state.page = st.sidebar.radio(
+    " ", # Empty label for cleaner look as title is already there
+    ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
+    index=["Home", "Take Test", "Result Explanation", "Feedback", "Resources"].index(st.session_state.page)
+)
 
-# --- TOP Navigation Bar Implementation (Using st.markdown for HTML buttons) ---
-nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
-
-st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True)
-cols = st.columns(len(nav_items))
-for i, item in enumerate(nav_items):
-    with cols[i]:
-        # Determine if the current item is the active page
-        is_active = (st.session_state.page == item)
-        active_class = " active" if is_active else ""
-        
-        # Create an HTML anchor tag acting as a button
-        # The onclick JavaScript updates the session state 'page' variable
-        # and scrolls to the top of the Streamlit app. This bypasses
-        # the 'unsafe_allow_html' issue with st.button.
-        # Added a more robust check for _streamlit_instance.set existence.
-        js_code = f"""
-            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTop = 0;
-            if (window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance && 
-                typeof window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance.set === 'function') {{
-                window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance.set({{page: '{item}'}});
-            }} else {{
-                // Fallback for older Streamlit versions or different internal structure
-                window.location.reload(); 
-            }}
-        """
-        st.markdown(
-            f'<a href="#" onclick="{js_code}" class="nav-button{active_class}">{item}</a>',
-            unsafe_allow_html=True
-        )
-
-st.markdown("</div>", unsafe_allow_html=True)
-
+menu = st.session_state.page # Get the current page from session state
 
 # --- Main Content Rendering ---
-menu = st.session_state.page # Get the current page from session state
 
 # HOME
 if menu == "Home":
-    # Create two columns for the home page layout
-    col_left, col_right = st.columns([2, 1]) # Adjust ratios as needed, e.g., [2, 1] for left wider than right
+    col_left, col_right = st.columns([2, 1])
 
     with col_left:
         st.markdown(f"""
@@ -294,21 +205,17 @@ if menu == "Home":
         """, unsafe_allow_html=True)
 
         st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
-        # Using a regular st.button for "Start Test" - this should not cause the TypeError
         if st.button("Start Test", key="home_start_button"):
             st.session_state.page = "Take Test"
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.write(" ") # Add some space or placeholder if needed for alignment
-        # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
-        # Ensure your GIF is in the same directory as app.py, or provide a relative path.
+        st.write(" ")
         try:
             st.image("maternity_care.gif", use_container_width=True)
         except FileNotFoundError:
             st.warning("maternity_care.gif not found. Please ensure it's in the same directory as app.py.")
-
 
 # TEST PAGE
 elif menu == "Take Test":
@@ -382,7 +289,6 @@ elif menu == "Take Test":
             if st.button("Back", key=f"back_button_{idx}"):
                 if idx > 1:
                     st.session_state.question_index -= 1
-                    # Ensure responses list is also managed correctly when going back
                     if st.session_state.responses:
                         st.session_state.responses.pop()
                     st.rerun()
@@ -391,7 +297,6 @@ elif menu == "Take Test":
                     st.rerun()
         with col2:
             if st.button("Next", key=f"next_button_{idx}"):
-                # Update response if already exists, otherwise append
                 if len(st.session_state.responses) < idx:
                     st.session_state.responses.append(options[choice])
                 else:
@@ -465,8 +370,6 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
-        # Use st.markdown and replace '\n' for proper rendering of bullet points
-        # The .replace('\\n', '\n') handles cases where the newline might be escaped in the string.
         st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
@@ -504,8 +407,7 @@ elif menu == "Take Test":
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        # Use multi_cell with explicit line breaks for tips to avoid FPDFException
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'): # Split by actual newline
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'):
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
@@ -524,7 +426,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
+        pdf.output(pdf_buffer, dest='S')
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
