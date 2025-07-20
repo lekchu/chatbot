@@ -3,31 +3,28 @@ import pandas as pd
 import joblib
 import plotly.graph_objects as go
 from fpdf import FPDF
-from io import BytesIO # Import BytesIO for in-memory PDF generation
+from io import BytesIO
 import base64
-import os # Import os to check for file existence
+import os
 
 # --- Configuration and File Loading ---
-# Define file paths (using relative paths, assume they are in the same directory as app.py)
 MODEL_PATH = "ppd_model_pipeline.pkl"
 ENCODER_PATH = "label_encoder.pkl"
-IMAGE_PATH = "maternity_care.png" # Assuming you have this image
+IMAGE_PATH = "maternity_care.png"
 
-# Check if model and encoder files exist before loading
 if not os.path.exists(MODEL_PATH):
     st.error(f"Error: Model file '{MODEL_PATH}' not found. Please ensure it's in the same directory.")
-    st.stop() # Stop the app if crucial files are missing
+    st.stop()
 if not os.path.exists(ENCODER_PATH):
     st.error(f"Error: Label encoder file '{ENCODER_PATH}' not found. Please ensure it's in the same directory.")
-    st.stop() # Stop the app if crucial files are missing
+    st.stop()
 
-# Load model and label encoder
 try:
     model = joblib.load(MODEL_PATH)
     le = joblib.load(ENCODER_PATH)
 except Exception as e:
-    st.error(f"Error loading model or label encoder: {e}. Please check your .pkl files.")
-    st.stop() # Stop the app if loading fails
+    st.error(f"Error loading model or encoder: {e}. Please check your .pkl files.")
+    st.stop()
 
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered")
 
@@ -38,19 +35,18 @@ def add_page_styling():
     .stApp {
         animation: fadeBg 10s ease-in-out infinite;
         background-color: #001f3f;
-        color: white; /* Ensure text is visible on dark background */
+        color: white;
     }
     @keyframes fadeBg {
         0% { background-color: #001f3f; }
         50% { background-color: #001f3f; }
         100% { background-color: #001f3f; }
     }
-    /* General styling for text, buttons, etc. */
     body {
         color: white;
     }
     .stButton>button {
-        background-color: #4CAF50; /* Green */
+        background-color: #4CAF50;
         color: white;
         border-radius: 8px;
         padding: 10px 20px;
@@ -60,37 +56,34 @@ def add_page_styling():
         transition: background-color 0.3s ease;
     }
     .stButton>button:hover {
-        background-color: #45a049; /* Darker Green on Hover */
+        background-color: #45a049;
     }
-    /* Style for primary buttons (e.g., Start Test, Next, Submit) */
     .stButton button:first-child {
-        background-color: #007BFF; /* Primary Blue */
+        background-color: #007BFF;
     }
     .stButton button:first-child:hover {
-        background-color: #0056b3; /* Darker Primary Blue on Hover */
+        background-color: #0056b3;
     }
-    /* Center elements in the main body more effectively */
     div.stSpinner > div {
         text-align: center;
     }
-    div.stAlert { /* Streamlit Alerts (success, warning, error, info) */
+    div.stAlert {
         font-size: 1.1em;
     }
-    .css-h5f0l0 { /* Specific class for radio buttons in Streamlit, targeting the label */
+    .css-h5f0l0 {
         color: white !important;
     }
-    /* Sidebar styling */
-    .css-1d391kg { /* Target sidebar background */
-        background-color: #00172e; /* Slightly darker blue for sidebar */
+    .css-1d391kg {
+        background-color: #00172e;
     }
-    .css-1f1j096 { /* Target sidebar text */
+    .css-1f1j096 {
         color: white;
     }
-    .css-pkz2s3 p { /* Sidebar button text */
+    .css-pkz2s3 p {
         color: white;
         font-size: 1.1em;
     }
-    .css-pkz2s3 button:hover { /* Sidebar button hover */
+    .css-pkz2s3 button:hover {
         background-color: #002b5c;
     }
     </style>
@@ -98,7 +91,7 @@ def add_page_styling():
 
 add_page_styling()
 
-# --- Session State Initialization (Ensures variables persist across page changes) ---
+# --- Session State Initialization ---
 if "page" not in st.session_state:
     st.session_state.page = "🏠 Home"
 
@@ -114,7 +107,6 @@ for var, default in {
         st.session_state[var] = default
 
 # --- Questionnaire Data ---
-# Using a list of tuples for questions and their options, as in your last provided code.
 QUESTIONS = [
     ("I have been able to laugh and see the funny side of things.",
      {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
@@ -147,12 +139,9 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     pdf.cell(0, 15, txt="Postpartum Depression Risk Prediction Report", ln=True, align='C')
     pdf.ln(10)
 
-    # Helper function to sanitize text for FPDF
     def sanitize_text_for_pdf(text):
-        if isinstance(text, (int, float)): # Ensure numbers are converted to string
+        if isinstance(text, (int, float)):
             text = str(text)
-        # Attempt to encode/decode to handle non-ASCII characters
-        # 'replace' will put '?' for unencodable chars, 'ignore' will remove them
         return text.encode('latin-1', 'replace').decode('latin-1')
 
     pdf.set_font("Arial", size=12)
@@ -173,9 +162,8 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     pdf.set_font("Arial", 'B', 14)
     pdf.cell(0, 10, txt="Personalized Tips:", ln=True)
     pdf.set_font("Arial", size=12)
-    # Add tips line by line
     for line in tips_text.split('\n'):
-        if line.strip(): # Avoid empty lines
+        if line.strip():
             pdf.multi_cell(0, 7, txt=sanitize_text_for_pdf(line.strip()))
     pdf.ln(5)
 
@@ -187,7 +175,6 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     return pdf_buffer.getvalue()
 
 # --- Sidebar navigation ---
-# This block uses your radio button sidebar structure
 with st.sidebar:
     if os.path.exists(IMAGE_PATH):
         st.image(IMAGE_PATH, width=150)
@@ -199,7 +186,7 @@ with st.sidebar:
         "Navigate",
         ["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"],
         index=["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"].index(st.session_state.page),
-        key="menu_radio" # Unique key for the radio button
+        key="menu_radio"
     )
 
 menu = st.session_state.page
@@ -217,7 +204,6 @@ if menu == "🏠 Home":
 
     if st.button("📝 Start Test"):
         st.session_state.page = "📝 Take Test"
-        # Reset questionnaire state when starting a new test from home
         st.session_state.question_index = 0
         st.session_state.responses = []
         st.session_state.age = 25
@@ -233,7 +219,7 @@ elif menu == "📝 Take Test":
 
     idx = st.session_state.question_index
 
-    if idx == 0: # Personal Information page
+    if idx == 0:
         st.subheader("Personal Information")
         st.session_state.name = st.text_input("First Name", value=st.session_state.name, help="Your first name for the report.")
         st.session_state.place = st.text_input("Your Place", value=st.session_state.place, help="Your city or region.")
@@ -250,13 +236,12 @@ elif menu == "📝 Take Test":
             else:
                 st.warning("Please enter your name and place before starting the questionnaire.")
 
-    elif 1 <= idx <= len(QUESTIONS): # Questionnaire pages (Q1 to Q10)
+    elif 1 <= idx <= len(QUESTIONS):
         q_text, options = QUESTIONS[idx - 1]
 
         st.subheader(f"Question {idx} of {len(QUESTIONS)}")
         st.write(q_text)
 
-        # Determine the default index for the radio button
         default_index = 0
         if len(st.session_state.responses) >= idx:
             stored_value = st.session_state.responses[idx-1]
@@ -284,7 +269,7 @@ elif menu == "📝 Take Test":
                 st.session_state.question_index += 1
                 st.rerun()
 
-    elif idx == len(QUESTIONS) + 1: # Result page
+    elif idx == len(QUESTIONS) + 1:
         st.subheader("Your PPD Risk Prediction Result")
 
         name = st.session_state.name
@@ -299,12 +284,11 @@ elif menu == "📝 Take Test":
             if st.button("Go back to questions"):
                 st.session_state.question_index = 1
                 st.rerun()
-            st.stop() # Corrected: Use st.stop() to halt execution in Streamlit app.
+            return # <--- This is where the SyntaxError would occur in the context of the main script body.
 
-        # Prepare the data dictionary for the model
         input_data = {
             "Age": [age],
-            "FamilySupport": [support], # Passed as string
+            "FamilySupport": [support],
             "EPDS_Score": [score]
         }
         for i, val in enumerate(q_values):
@@ -312,19 +296,15 @@ elif menu == "📝 Take Test":
 
         input_df = pd.DataFrame(input_data)
 
-        # --- Manual Encoding for FamilySupport ---
         family_support_mapping = {"High": 0, "Medium": 1, "Low": 2}
         input_df['FamilySupport'] = input_df['FamilySupport'].map(family_support_mapping)
 
-        # --- Robust Type Conversion and NaN Handling for all numeric columns ---
         numeric_cols = [f"Q{i+1}" for i in range(len(QUESTIONS))] + ["Age", "EPDS_Score", "FamilySupport"]
         for col in numeric_cols:
             if col in input_df.columns:
-                # Convert to numeric, coerce errors (turn non-convertible to NaN),
-                # fill any NaNs with 0 (or a suitable default), then convert to int
                 input_df[col] = pd.to_numeric(input_df[col], errors='coerce').fillna(0).astype(int)
 
-        # --- IMPORTANT DEBUGGING STEPS (KEEP THESE!) ---
+        # --- IMPORTANT DEBUGGING STEPS ---
         st.subheader("--- Debugging Info (for developer) ---")
         st.write("DataFrame before prediction:")
         st.dataframe(input_df)
@@ -339,8 +319,8 @@ elif menu == "📝 Take Test":
         st.subheader("--- End Debugging Info ---")
         # --- END IMPORTANT DEBUGGING STEPS ---
 
-        pred_label = "Error" # Default in case of prediction failure
-        pred_encoded = 0 # Default for gauge in case of failure
+        pred_label = "Error"
+        pred_encoded = 0
 
         try:
             pred_encoded = model.predict(input_df)[0]
@@ -352,7 +332,6 @@ elif menu == "📝 Take Test":
         st.success(f"Hello {name}, your predicted PPD Risk Level is: **{pred_label}**")
         st.markdown("<p style='color:#ccc; font-style:italic;'>Note: This screening result is based on the EPDS – Edinburgh Postnatal Depression Scale. It is for informational purposes only.</p>", unsafe_allow_html=True)
 
-        # Define colors for the gauge based on risk level
         gauge_colors = {
             "Mild": "lightgreen",
             "Moderate": "gold",
@@ -360,20 +339,20 @@ elif menu == "📝 Take Test":
             "Profound": "red",
             "Error": "gray"
         }
-        gauge_bar_color = gauge_colors.get(pred_label, "purple") # Default if label not found
+        gauge_bar_color = gauge_colors.get(pred_label, "purple")
 
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=pred_encoded,
-            number={"suffix": " / 3", "font": {"color": "white"}}, # Max encoded value is 3 (for Profound)
+            number={"suffix": " / 3", "font": {"color": "white"}},
             gauge={
                 "axis": {"range": [0, 3], "tickvals": [0, 1, 2, 3], "ticktext": ["Mild", "Moderate", "Severe", "Profound"], "tickfont": {"color": "white"}},
                 "bar": {"color": gauge_bar_color},
                 "steps": [
-                    {"range": [0, 0.9], "color": "rgba(144, 238, 144, 0.2)"}, # Mild
-                    {"range": [0.9, 1.9], "color": "rgba(255, 215, 0, 0.2)"}, # Moderate
-                    {"range": [1.9, 2.9], "color": "rgba(255, 165, 0, 0.2)"}, # Severe
-                    {"range": [2.9, 3.1], "color": "rgba(255, 0, 0, 0.2)"}  # Profound (slightly extended to ensure 3 fits)
+                    {"range": [0, 0.9], "color": "rgba(144, 238, 144, 0.2)"},
+                    {"range": [0.9, 1.9], "color": "rgba(255, 215, 0, 0.2)"},
+                    {"range": [1.9, 2.9], "color": "rgba(255, 165, 0, 0.2)"},
+                    {"range": [2.9, 3.1], "color": "rgba(255, 0, 0, 0.2)"}
                 ],
                 "threshold": {
                     "line": {"color": "darkblue", "width": 4},
@@ -383,7 +362,7 @@ elif menu == "📝 Take Test":
             },
             title={"text": "PPD Risk Level", "font": {"size": 24, "color": "white"}}
         ))
-        fig.update_layout(height=300, margin=dict(l=10, r=10, t=50, b=10), paper_bgcolor="#001f3f", font={"color": "white"}) # Match app background
+        fig.update_layout(height=300, margin=dict(l=10, r=10, t=50, b=10), paper_bgcolor="#001f3f", font={"color": "white"})
         st.plotly_chart(fig, use_container_width=True)
 
         tips = {
@@ -416,7 +395,7 @@ elif menu == "📝 Take Test":
 - **Remember You're Not Alone**: PPD is treatable, and help is available.
 """
         }
-        pred_tips = tips.get(pred_label, "Consult a professional immediately.") # Default to professional help for any undefined label
+        pred_tips = tips.get(pred_label, "Consult a professional immediately.")
 
         st.subheader("💡 Personalized Tips")
         st.markdown(pred_tips)
@@ -430,14 +409,13 @@ elif menu == "📝 Take Test":
             st.markdown(href, unsafe_allow_html=True)
         with col_res2:
             if st.button("🔄 Restart", key="restart_test"):
-                # Reset all relevant session state variables
                 st.session_state.question_index = 0
                 st.session_state.responses = []
                 st.session_state.age = 25
                 st.session_state.support = "Medium"
                 st.session_state.name = ""
                 st.session_state.place = ""
-                st.session_state.page = "📝 Take Test" # Stays on test page to start fresh
+                st.session_state.page = "📝 Take Test"
                 st.rerun()
 
 # RESULT EXPLANATION
