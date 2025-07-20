@@ -57,7 +57,8 @@ header {visibility: hidden;}
 }
 
 /* Style for Streamlit buttons within the top navigation bar context */
-.stButton > button {
+/* This now applies to the simulated buttons made with <a> tags within the top-nav-container */
+.top-nav-container a {
     background-color: transparent; /* Make buttons transparent initially */
     color: white;
     border: none;
@@ -67,13 +68,23 @@ header {visibility: hidden;}
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
     border-radius: 5px;
+    text-decoration: none; /* Remove underline from links */
+    display: inline-block; /* Allows padding and width for anchor tags */
 }
 
-.stButton > button:hover {
+.top-nav-container a:hover {
     background-color: rgba(232, 76, 61, 0.2); /* Light red semi-transparent on hover */
     color: #E84C3D; /* Highlight text with accent color */
     transform: translateY(-2px); /* Subtle lift */
 }
+
+/* Style for the active/selected navigation item */
+.top-nav-container a.active {
+    color: #E84C3D; /* Accent color for the active item */
+    /* You could also add a background or border here if desired */
+    /* background-color: rgba(232, 76, 61, 0.1); */
+}
+
 
 /* Header/Title Styling */
 h1, h2, h3, h4, h5, h6 {
@@ -230,27 +241,27 @@ if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
 
-# --- TOP Navigation Bar Implementation ---
+# --- TOP Navigation Bar Implementation (Using st.markdown for HTML buttons) ---
 nav_items = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
 
-st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True) # Container for the nav bar
+st.markdown("<div class='top-nav-container'>", unsafe_allow_html=True)
 cols = st.columns(len(nav_items))
 for i, item in enumerate(nav_items):
     with cols[i]:
-        # CORRECTED: The button label is now a simple string.
-        # The color change for the active item is handled by CSS based on a custom class or direct style.
-        # Here, we'll use a direct style within the button if 'item' is the current page,
-        # otherwise, it's a regular string, and the CSS for .stButton > button handles default styling.
-        button_label_style = f"color:#E84C3D;" if st.session_state.page == item else ""
-        button_label = f"<span style='{button_label_style}'>{item}</span>"
+        # Determine if the current item is the active page
+        is_active = (st.session_state.page == item)
+        active_class = " active" if is_active else ""
+        
+        # Create an HTML anchor tag acting as a button
+        # The onclick event uses JavaScript to set the session state and scroll to top.
+        # This is a less conventional way to interact with Streamlit, but bypasses the st.button TypeError.
+        # It relies on internal Streamlit JavaScript functions which might change in future versions.
+        st.markdown(
+            f'<a href="#" onclick="window.parent.document.querySelector(\'[data-testid=\"stAppViewContainer\"]\').scrollTop = 0; document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set and document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set({{page: \'{item}\'}});" class="nav-button{active_class}">{item}</a>',
+            unsafe_allow_html=True
+        )
 
-        # The unsafe_allow_html=True is now used correctly if the label itself is HTML.
-        # The TypeError happened because unsafe_allow_html was passed as a keyword arg to st.button directly.
-        # It's only an argument of st.markdown, st.write, etc., when displaying HTML.
-        if st.button(button_label, key=f"top_nav_button_{item}", help=f"Go to {item} page", unsafe_allow_html=True):
-            st.session_state.page = item
-            st.rerun()
-st.markdown("</div>", unsafe_allow_html=True) # Close the container
+st.markdown("</div>", unsafe_allow_html=True)
 
 
 # --- Main Content Rendering ---
@@ -270,6 +281,7 @@ if menu == "Home":
         """, unsafe_allow_html=True)
 
         st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
+        # Using a regular st.button for "Start Test" - this should not cause the TypeError
         if st.button("Start Test", key="home_start_button"):
             st.session_state.page = "Take Test"
             st.rerun()
