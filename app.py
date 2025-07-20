@@ -7,7 +7,8 @@ from io import BytesIO # Import BytesIO for in-memory PDF generation
 import base64
 import os # Import os to check for file existence
 
-# Define file paths (using absolute paths for robustness if needed, but relative is usually fine for Streamlit apps)
+# --- Configuration and File Loading ---
+# Define file paths (using relative paths, assume they are in the same directory as app.py)
 MODEL_PATH = "ppd_model_pipeline.pkl"
 ENCODER_PATH = "label_encoder.pkl"
 IMAGE_PATH = "maternity_care.png" # Assuming you have this image
@@ -28,11 +29,10 @@ except Exception as e:
     st.error(f"Error loading model or label encoder: {e}. Please check your .pkl files.")
     st.stop() # Stop the app if loading fails
 
-# Page config
-st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered") # Changed to 'centered' for better layout with sidebars
+st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered")
 
-# Blue background animation (kept your original animation)
-def add_page_animation():
+# --- Global CSS Styling and Animation ---
+def add_page_styling():
     st.markdown("""
     <style>
     .stApp {
@@ -96,12 +96,12 @@ def add_page_animation():
     </style>
     """, unsafe_allow_html=True)
 
-add_page_animation()
+add_page_styling()
 
-# --- Session State Initialization (Moved to top-level for consistent behavior) ---
+# --- Session State Initialization (Ensures variables persist across page changes) ---
 if "page" not in st.session_state:
     st.session_state.page = "🏠 Home"
-# Initialize other session state variables here to ensure they persist across page changes
+
 for var, default in {
     'question_index': 0,
     'responses': [],
@@ -113,27 +113,9 @@ for var, default in {
     if var not in st.session_state:
         st.session_state[var] = default
 
-# Sidebar navigation (kept your radio button structure)
-with st.sidebar:
-    # Add your image here if you have one, e.g., st.image(IMAGE_PATH, width=150)
-    # Check if image file exists before displaying
-    if os.path.exists(IMAGE_PATH):
-        st.image(IMAGE_PATH, width=150)
-    else:
-        st.warning(f"Warning: Image file '{IMAGE_PATH}' not found.")
-
-    st.markdown("## Navigation")
-    st.session_state.page = st.sidebar.radio(
-        "Navigate",
-        ["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"],
-        index=["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"].index(st.session_state.page),
-        key="menu"
-    )
-
-menu = st.session_state.page
-
-# --- Questionnaire Data (retained your list of tuples format) ---
-q_responses = [
+# --- Questionnaire Data ---
+# Using a list of tuples for questions and their options, as in your last provided code.
+QUESTIONS = [
     ("I have been able to laugh and see the funny side of things.",
      {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
     ("I have looked forward with enjoyment to things",
@@ -157,7 +139,7 @@ q_responses = [
      {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
 ]
 
-# --- PDF Generation Function (with sanitization for FPDF) ---
+# --- PDF Generation Function (with sanitization for FPDF and BytesIO for in-memory) ---
 def create_pdf_report(name, place, age, support, q_values, score, pred_label, tips_text):
     pdf = FPDF()
     pdf.add_page()
@@ -204,6 +186,25 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     pdf.output(pdf_buffer)
     return pdf_buffer.getvalue()
 
+# --- Sidebar navigation ---
+# This block uses your radio button sidebar structure
+with st.sidebar:
+    if os.path.exists(IMAGE_PATH):
+        st.image(IMAGE_PATH, width=150)
+    else:
+        st.warning(f"Warning: Image file '{IMAGE_PATH}' not found. Please place it in the same directory.")
+
+    st.markdown("## Navigation")
+    st.session_state.page = st.radio(
+        "Navigate",
+        ["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"],
+        index=["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"].index(st.session_state.page),
+        key="menu_radio" # Unique key for the radio button
+    )
+
+menu = st.session_state.page
+
+# --- Page Content based on Navigation ---
 
 # HOME Page
 if menu == "🏠 Home":
@@ -214,10 +215,10 @@ if menu == "🏠 Home":
     </div>
     """, unsafe_allow_html=True)
 
-    # Ensure other session states are reset when going to Home or starting a new test
     if st.button("📝 Start Test"):
         st.session_state.page = "📝 Take Test"
-        st.session_state.question_index = 0 # Reset questionnaire for a new test
+        # Reset questionnaire state when starting a new test from home
+        st.session_state.question_index = 0
         st.session_state.responses = []
         st.session_state.age = 25
         st.session_state.support = "Medium"
@@ -232,32 +233,32 @@ elif menu == "📝 Take Test":
 
     idx = st.session_state.question_index
 
-    if idx == 0:
+    if idx == 0: # Personal Information page
         st.subheader("Personal Information")
-        st.session_state.name = st.text_input("First Name", value=st.session_state.name)
-        st.session_state.place = st.text_input("Your Place", value=st.session_state.place)
-        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age)
+        st.session_state.name = st.text_input("First Name", value=st.session_state.name, help="Your first name for the report.")
+        st.session_state.place = st.text_input("Your Place", value=st.session_state.place, help="Your city or region.")
+        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age, help="Your age in years.")
         st.session_state.support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
-                                               index=["High", "Medium", "Low"].index(st.session_state.support))
+                                               index=["High", "Medium", "Low"].index(st.session_state.support),
+                                               help="How much support do you feel you receive from your family?")
 
         st.markdown("---")
-        if st.button("Start Questionnaire"):
+        if st.button("Start Questionnaire", key="start_questionnaire_btn"):
             if st.session_state.name.strip() and st.session_state.place.strip():
                 st.session_state.question_index += 1
                 st.rerun()
             else:
                 st.warning("Please enter your name and place before starting the questionnaire.")
 
-    elif 1 <= idx <= len(q_responses): # Use len(q_responses) for the total number of questions
-        q_text, options = q_responses[idx - 1]
+    elif 1 <= idx <= len(QUESTIONS): # Questionnaire pages (Q1 to Q10)
+        q_text, options = QUESTIONS[idx - 1]
 
-        st.subheader(f"Question {idx} of {len(q_responses)}")
+        st.subheader(f"Question {idx} of {len(QUESTIONS)}")
         st.write(q_text)
 
         # Determine the default index for the radio button
         default_index = 0
         if len(st.session_state.responses) >= idx:
-            # Find the key (text option) corresponding to the stored value
             stored_value = st.session_state.responses[idx-1]
             for i, (text, val) in enumerate(options.items()):
                 if val == stored_value:
@@ -283,7 +284,7 @@ elif menu == "📝 Take Test":
                 st.session_state.question_index += 1
                 st.rerun()
 
-    elif idx == len(q_responses) + 1: # After all questions are answered
+    elif idx == len(QUESTIONS) + 1: # Result page
         st.subheader("Your PPD Risk Prediction Result")
 
         name = st.session_state.name
@@ -293,49 +294,40 @@ elif menu == "📝 Take Test":
         q_values = st.session_state.responses
         score = sum(q_values)
 
-        if len(q_values) != len(q_responses):
+        if len(q_values) != len(QUESTIONS):
             st.error("It seems some questions were skipped or not fully answered. Please go back and complete all questions.")
             if st.button("Go back to questions"):
                 st.session_state.question_index = 1
                 st.rerun()
-            return
+            st.stop() # Corrected: Use st.stop() to halt execution in Streamlit app.
 
-        # Prepare the data dictionary
+        # Prepare the data dictionary for the model
         input_data = {
             "Age": [age],
-            "FamilySupport": [support], # Pass the string value
+            "FamilySupport": [support], # Passed as string
             "EPDS_Score": [score]
         }
-        # Add Q1-Q10 values based on your `q_responses` structure
         for i, val in enumerate(q_values):
             input_data[f"Q{i+1}"] = [val]
 
         input_df = pd.DataFrame(input_data)
 
         # --- Manual Encoding for FamilySupport ---
-        # This is CRUCIAL if your model expects numerical input for FamilySupport
         family_support_mapping = {"High": 0, "Medium": 1, "Low": 2}
-        # Apply the mapping. If 'FamilySupport' might contain NaNs or unexpected values,
-        # add .fillna(some_default_numeric_value) before converting to int.
         input_df['FamilySupport'] = input_df['FamilySupport'].map(family_support_mapping)
 
-
         # --- Robust Type Conversion and NaN Handling for all numeric columns ---
-        # This is a defensive measure to ensure all numeric columns are clean
-        # Identify all columns that should be numeric for the model
-        numeric_cols = [f"Q{i+1}" for i in range(len(q_responses))] + ["Age", "EPDS_Score", "FamilySupport"]
-
+        numeric_cols = [f"Q{i+1}" for i in range(len(QUESTIONS))] + ["Age", "EPDS_Score", "FamilySupport"]
         for col in numeric_cols:
             if col in input_df.columns:
                 # Convert to numeric, coerce errors (turn non-convertible to NaN),
                 # fill any NaNs with 0 (or a suitable default), then convert to int
-                # Using fillna(0) for safety; adjust if your model expects a different default for NaNs
                 input_df[col] = pd.to_numeric(input_df[col], errors='coerce').fillna(0).astype(int)
 
         # --- IMPORTANT DEBUGGING STEPS (KEEP THESE!) ---
         st.subheader("--- Debugging Info (for developer) ---")
         st.write("DataFrame before prediction:")
-        st.dataframe(input_df) # Use st.dataframe for better display
+        st.dataframe(input_df)
         st.write("DataFrame dtypes:")
         st.write(input_df.dtypes)
         st.write("DataFrame info:")
@@ -351,20 +343,14 @@ elif menu == "📝 Take Test":
         pred_encoded = 0 # Default for gauge in case of failure
 
         try:
-            # Drop the 'Name' column as it's not a feature for the model
-            # Ensure the order of columns matches the training data, if your model is sensitive to it.
-            # A pipeline usually handles column order if it includes transformers like ColumnTransformer.
-            # If the model errors out due to column mismatch, you might need to reorder input_df.
             pred_encoded = model.predict(input_df)[0]
             pred_label = le.inverse_transform([pred_encoded])[0]
         except Exception as e:
             st.error(f"Error during prediction: {e}. This likely means the input data types or columns are not what the model expects.")
             st.warning("Please check the 'Debugging Info' above and compare it to how your model was trained.")
 
-
         st.success(f"Hello {name}, your predicted PPD Risk Level is: **{pred_label}**")
         st.markdown("<p style='color:#ccc; font-style:italic;'>Note: This screening result is based on the EPDS – Edinburgh Postnatal Depression Scale. It is for informational purposes only.</p>", unsafe_allow_html=True)
-
 
         # Define colors for the gauge based on risk level
         gauge_colors = {
@@ -451,7 +437,7 @@ elif menu == "📝 Take Test":
                 st.session_state.support = "Medium"
                 st.session_state.name = ""
                 st.session_state.place = ""
-                st.session_state.page = "📝 Take Test" # Stay on test page or go to Home
+                st.session_state.page = "📝 Take Test" # Stays on test page to start fresh
                 st.rerun()
 
 # RESULT EXPLANATION
