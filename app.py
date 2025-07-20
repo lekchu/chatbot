@@ -20,7 +20,6 @@ st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wi
 
 # --- Custom CSS for Styling ---
 # This CSS sets the background color and text colors.
-# It does NOT hide the sidebar, as we are now using it for navigation.
 custom_css = """
 <style>
 /* Global App Styling */
@@ -154,7 +153,6 @@ a[download]:hover {
     background-color: rgba(232, 76, 61, 0.2); /* Light accent on hover for inactive items */
 }
 
-
 </style>
 """
 
@@ -179,6 +177,7 @@ if "place" not in st.session_state:
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
+
 # --- Sidebar Navigation ---
 # This is the standard Streamlit sidebar navigation
 st.sidebar.title("Navigate")
@@ -194,7 +193,7 @@ menu = st.session_state.page # Get the current page from session state
 
 # HOME
 if menu == "Home":
-    col_left, col_right = st.columns([2, 1])
+    col_left, col_right = st.columns([2, 1]) # Adjust ratios as needed, e.g., [2, 1] for left wider than right
 
     with col_left:
         st.markdown(f"""
@@ -211,11 +210,14 @@ if menu == "Home":
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.write(" ")
+        st.write(" ") # Add some space or placeholder if needed for alignment
+        # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
+        # Ensure your GIF is in the same directory as app.py, or provide a relative path.
         try:
             st.image("maternity_care.gif", use_container_width=True)
         except FileNotFoundError:
             st.warning("maternity_care.gif not found. Please ensure it's in the same directory as app.py.")
+
 
 # TEST PAGE
 elif menu == "Take Test":
@@ -289,6 +291,7 @@ elif menu == "Take Test":
             if st.button("Back", key=f"back_button_{idx}"):
                 if idx > 1:
                     st.session_state.question_index -= 1
+                    # Ensure responses list is also managed correctly when going back
                     if st.session_state.responses:
                         st.session_state.responses.pop()
                     st.rerun()
@@ -297,6 +300,7 @@ elif menu == "Take Test":
                     st.rerun()
         with col2:
             if st.button("Next", key=f"next_button_{idx}"):
+                # Update response if already exists, otherwise append
                 if len(st.session_state.responses) < idx:
                     st.session_state.responses.append(options[choice])
                 else:
@@ -370,6 +374,7 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
+        # Use st.markdown and replace '\n' for proper rendering of bullet points
         st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
@@ -407,7 +412,8 @@ elif menu == "Take Test":
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'):
+        # Use multi_cell with explicit line breaks for tips to avoid FPDFException
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'): # Split by actual newline
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
@@ -425,8 +431,9 @@ elif menu == "Take Test":
                 pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Answer: Not provided")
                 pdf.ln(2)
 
+
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S')
+        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -439,8 +446,8 @@ elif menu == "Take Test":
             st.session_state.support = "Medium"
             st.session_state.name = ""
             st.session_state.place = ""
-            st.session_state.feedback_submitted = False
-            st.session_state.page = "Home"
+            st.session_state.feedback_submitted = False # Reset feedback state as well
+            st.session_state.page = "Home" # Navigate to home
             st.rerun()
 
 elif menu == "Result Explanation":
