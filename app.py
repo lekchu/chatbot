@@ -6,14 +6,13 @@ from fpdf import FPDF
 from io import BytesIO
 import base64
 
-# Load model and label encoder
+# Load model and encoder
 model = joblib.load("ppd_model_pipeline.pkl")
 le = joblib.load("label_encoder.pkl")
 
-# Set page config
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Default session state
+# Session state init
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
@@ -28,54 +27,42 @@ for var, default in {
     if var not in st.session_state:
         st.session_state[var] = default
 
-# Style: background, nav buttons, image
+# CSS Styling
 st.markdown("""
 <style>
 .stApp {
     background-color: #001f3f;
     color: white;
 }
-.nav-button {
-    background-color: white;
-    color: #001f3f;
-    border-radius: 8px;
-    padding: 0.5em 1.5em;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
+.invisible-button > button {
+    background-color: transparent !important;
+    color: transparent !important;
+    border: none !important;
+    height: 0px !important;
+    padding: 0px !important;
+    margin: 0px !important;
 }
-.nav-button:hover {
-    background-color: #ccc;
-}
-.right-image {
-    position: fixed;
-    top: 100px;
-    right: 30px;
-    width: 220px;
-    z-index: -1;
+.bottom-image {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Top navigation using Streamlit columns
-st.write("")  # spacer
+# Invisible Nav Buttons (for spacing/logic if needed)
 nav_cols = st.columns(5)
 nav_labels = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
-
 for i, label in enumerate(nav_labels):
-    if nav_cols[i].button(label, key=label):
-        st.session_state.page = label
+    with nav_cols[i]:
+        st.markdown(f"<div class='invisible-button'>{label}</div>", unsafe_allow_html=True)
+        if st.button("", key=label):
+            st.session_state.page = label
 
-# Persistent image (local file as base64)
-with open("maternity_care.png", "rb") as f:
-    image_data = f.read()
-b64_image = base64.b64encode(image_data).decode()
-st.markdown(f'<img src="data:image/png;base64,{b64_image}" class="right-image">', unsafe_allow_html=True)
-
-# Get selected page
+# Page Router
 menu = st.session_state.page
 
-# HOME
+# --- HOME ---
 if menu == "Home":
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
@@ -83,11 +70,12 @@ if menu == "Home":
         <h3 style="font-size: 1.6em; color: white;">Empowering maternal health through smart technology</h3>
     </div>
     """, unsafe_allow_html=True)
+
     if st.button("Start Test"):
         st.session_state.page = "Take Test"
         st.rerun()
 
-# TAKE TEST
+# --- TAKE TEST ---
 elif menu == "Take Test":
     st.header("Questionnaire")
     idx = st.session_state.question_index
@@ -191,7 +179,7 @@ elif menu == "Take Test":
         st.subheader("Personalized Tips")
         st.markdown(tips.get(pred_label, "Consult a professional immediately."))
 
-        # PDF generation
+        # PDF download
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -243,3 +231,13 @@ elif menu == "Resources":
     - [WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [Postpartum Support International](https://www.postpartum.net/)
     """)
+
+# 👶 Add bottom-centered image on every page
+with open("maternity_care.png", "rb") as f:
+    image_data = f.read()
+b64_image = base64.b64encode(image_data).decode()
+st.markdown(f"""
+<div class="bottom-image">
+    <img src="data:image/png;base64,{b64_image}" width="250"/>
+</div>
+""", unsafe_allow_html=True)
