@@ -18,10 +18,9 @@ except FileNotFoundError:
 # --- Page Configuration ---
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# --- Custom CSS for Styling and Hiding Sidebar (Combined all styling here) ---
-# This CSS makes the navigation "invisible" in the sense that it's highly customized
-# and replaces the default Streamlit look, making it appear seamlessly integrated
-# rather than as standard Streamlit buttons.
+# --- Custom CSS for Styling and Hiding Streamlit Defaults ---
+# This CSS hides the default Streamlit sidebar, header, and footer.
+# It also styles the custom top navigation to appear integrated ("invisible" as in seamless).
 custom_css = """
 <style>
 /* Global App Styling - Deep Blue/Black Theme with Fade-in Effect */
@@ -259,8 +258,19 @@ for i, item in enumerate(nav_items):
         # The onclick JavaScript updates the session state 'page' variable
         # and scrolls to the top of the Streamlit app. This bypasses
         # the 'unsafe_allow_html' issue with st.button.
+        # Added a more robust check for _streamlit_instance.set existence.
+        js_code = f"""
+            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTop = 0;
+            if (window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance && 
+                typeof window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance.set === 'function') {{
+                window.parent.document.querySelector('[data-testid="stAppViewContainer"]')._streamlit_instance.set({{page: '{item}'}});
+            }} else {{
+                // Fallback for older Streamlit versions or different internal structure
+                window.location.reload(); 
+            }}
+        """
         st.markdown(
-            f'<a href="#" onclick="window.parent.document.querySelector(\'[data-testid=\"stAppViewContainer\"]\').scrollTop = 0; document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set and document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set({{page: \'{item}\'}});" class="nav-button{active_class}">{item}</a>',
+            f'<a href="#" onclick="{js_code}" class="nav-button{active_class}">{item}</a>',
             unsafe_allow_html=True
         )
 
@@ -515,7 +525,7 @@ elif menu == "Take Test":
 
         pdf_buffer = BytesIO()
         pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
-        b64_pdf = base664.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
 
