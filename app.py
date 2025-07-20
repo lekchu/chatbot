@@ -19,7 +19,6 @@ except FileNotFoundError:
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
 # --- Custom CSS for Styling ---
-# This CSS sets the background color and text colors.
 custom_css = """
 <style>
 /* Global App Styling */
@@ -159,7 +158,6 @@ a[download]:hover {
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # --- Session State Initialization ---
-# Initialize session state variables once at the beginning of the script
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 if "question_index" not in st.session_state:
@@ -177,23 +175,19 @@ if "place" not in st.session_state:
 if "feedback_submitted" not in st.session_state:
     st.session_state.feedback_submitted = False
 
-
 # --- Sidebar Navigation ---
-# This is the standard Streamlit sidebar navigation
 st.sidebar.title("Navigate")
 st.session_state.page = st.sidebar.radio(
-    " ", # Empty label for cleaner look as title is already there
+    " ",
     ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"],
     index=["Home", "Take Test", "Result Explanation", "Feedback", "Resources"].index(st.session_state.page)
 )
 
-menu = st.session_state.page # Get the current page from session state
+menu = st.session_state.page
 
 # --- Main Content Rendering ---
-
-# HOME
 if menu == "Home":
-    col_left, col_right = st.columns([2, 1]) # Adjust ratios as needed, e.g., [2, 1] for left wider than right
+    col_left, col_right = st.columns([2, 1])
 
     with col_left:
         st.markdown(f"""
@@ -210,16 +204,12 @@ if menu == "Home":
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.write(" ") # Add some space or placeholder if needed for alignment
-        # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
-        # Ensure your GIF is in the same directory as app.py, or provide a relative path.
+        st.write(" ")
         try:
             st.image("maternity_care.gif", use_container_width=True)
         except FileNotFoundError:
             st.warning("maternity_care.gif not found. Please ensure it's in the same directory as app.py.")
 
-
-# TEST PAGE
 elif menu == "Take Test":
     st.header("Questionnaire")
 
@@ -291,7 +281,6 @@ elif menu == "Take Test":
             if st.button("Back", key=f"back_button_{idx}"):
                 if idx > 1:
                     st.session_state.question_index -= 1
-                    # Ensure responses list is also managed correctly when going back
                     if st.session_state.responses:
                         st.session_state.responses.pop()
                     st.rerun()
@@ -300,7 +289,6 @@ elif menu == "Take Test":
                     st.rerun()
         with col2:
             if st.button("Next", key=f"next_button_{idx}"):
-                # Update response if already exists, otherwise append
                 if len(st.session_state.responses) < idx:
                     st.session_state.responses.append(options[choice])
                 else:
@@ -374,23 +362,22 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
-        # Use st.markdown and replace '\n' for proper rendering of bullet points
-        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
+        st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\n', '\n'))
 
-        # PDF Report Generation
+        # --- PDF Report Generation ---
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=16)
-        pdf.cell(200, 10, txt="Postpartum Depression Risk Prediction Report", ln=True, align='C')
+        pdf.cell(0, 10, txt="Postpartum Depression Risk Prediction Report", ln=True, align='C')
         pdf.ln(10)
 
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
-        pdf.cell(200, 10, txt=f"Place: {place}", ln=True)
-        pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
-        pdf.cell(200, 10, txt=f"Support Level: {support}", ln=True)
+        pdf.cell(0, 10, txt=f"Name: {name}", ln=True)
+        pdf.cell(0, 10, txt=f"Place: {place}", ln=True)
+        pdf.cell(0, 10, txt=f"Age: {age}", ln=True)
+        pdf.cell(0, 10, txt=f"Support Level: {support}", ln=True)
         pdf.ln(5)
-        pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
+        pdf.cell(0, 10, txt=f"Total EPDS Score: {score}", ln=True)
         
         risk_color = (40, 167, 69) # Green for Mild
         if pred_label == "Moderate":
@@ -401,39 +388,40 @@ elif menu == "Take Test":
             risk_color = (139, 0, 0) # Dark Red for Profound
 
         pdf.set_text_color(*risk_color)
-        pdf.cell(200, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
+        pdf.cell(0, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
         pdf.set_text_color(0, 0, 0) # Reset text color to black for subsequent text
 
         pdf.ln(10)
         pdf.set_font("Arial", 'I', size=10)
+        # Use a wider cell (e.g., pdf.w - 2 * pdf.l_margin) for general text.
         pdf.multi_cell(0, 5, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)")
         
         pdf.ln(10)
         pdf.set_font("Arial", 'B', size=12)
-        pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
+        pdf.cell(0, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        # Use multi_cell with explicit line breaks for tips to avoid FPDFException
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'): # Split by actual newline
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'):
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
         pdf.ln(10)
         pdf.set_font("Arial", 'B', size=12)
-        pdf.cell(200, 10, txt="Your Responses:", ln=True)
+        pdf.cell(0, 10, txt="Your Responses:", ln=True)
         pdf.set_font("Arial", size=10)
+        # Iterate through original questions to show full question and user's answer
         for i, (q_text, options) in enumerate(q_responses):
             if i < len(q_values):
                 selected_option_value = q_values[i]
+                # Find the text of the selected option
                 selected_option_text = next((k for k, v in options.items() if v == selected_option_value), "N/A")
                 pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Your Answer: {selected_option_text} (Score: {selected_option_value})")
-                pdf.ln(2)
+                pdf.ln(2) # Small space after each question-answer pair
             else:
                 pdf.multi_cell(0, 5, txt=f"Q{i+1}: {q_text}\n   Answer: Not provided")
                 pdf.ln(2)
 
-
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
+        pdf.output(pdf_buffer, dest='S')
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
@@ -446,8 +434,8 @@ elif menu == "Take Test":
             st.session_state.support = "Medium"
             st.session_state.name = ""
             st.session_state.place = ""
-            st.session_state.feedback_submitted = False # Reset feedback state as well
-            st.session_state.page = "Home" # Navigate to home
+            st.session_state.feedback_submitted = False
+            st.session_state.page = "Home"
             st.rerun()
 
 elif menu == "Result Explanation":
