@@ -3,38 +3,106 @@ import pandas as pd
 import joblib
 import plotly.graph_objects as go
 from fpdf import FPDF
-from io import BytesIO
+from io import BytesIO # Import BytesIO for in-memory PDF generation
 import base64
-import os # To check if files exist
+import os # Import os to check for file existence
 
-# --- Configuration and File Loading ---
-# Define file paths
+# Define file paths (using absolute paths for robustness if needed, but relative is usually fine for Streamlit apps)
 MODEL_PATH = "ppd_model_pipeline.pkl"
 ENCODER_PATH = "label_encoder.pkl"
-IMAGE_PATH = "maternity_care.png"
+IMAGE_PATH = "maternity_care.png" # Assuming you have this image
 
-# Check if model and encoder files exist
+# Check if model and encoder files exist before loading
 if not os.path.exists(MODEL_PATH):
     st.error(f"Error: Model file '{MODEL_PATH}' not found. Please ensure it's in the same directory.")
-    st.stop()
+    st.stop() # Stop the app if crucial files are missing
 if not os.path.exists(ENCODER_PATH):
     st.error(f"Error: Label encoder file '{ENCODER_PATH}' not found. Please ensure it's in the same directory.")
-    st.stop()
+    st.stop() # Stop the app if crucial files are missing
 
-# Load model and encoder
+# Load model and label encoder
 try:
     model = joblib.load(MODEL_PATH)
     le = joblib.load(ENCODER_PATH)
 except Exception as e:
-    st.error(f"Error loading model or encoder: {e}. Please check your .pkl files.")
-    st.stop()
+    st.error(f"Error loading model or label encoder: {e}. Please check your .pkl files.")
+    st.stop() # Stop the app if loading fails
 
-st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered")
+# Page config
+st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="centered") # Changed to 'centered' for better layout with sidebars
 
-# --- Session State Initialization ---
-# Initialize session state variables if they don't exist
+# Blue background animation (kept your original animation)
+def add_page_animation():
+    st.markdown("""
+    <style>
+    .stApp {
+        animation: fadeBg 10s ease-in-out infinite;
+        background-color: #001f3f;
+        color: white; /* Ensure text is visible on dark background */
+    }
+    @keyframes fadeBg {
+        0% { background-color: #001f3f; }
+        50% { background-color: #001f3f; }
+        100% { background-color: #001f3f; }
+    }
+    /* General styling for text, buttons, etc. */
+    body {
+        color: white;
+    }
+    .stButton>button {
+        background-color: #4CAF50; /* Green */
+        color: white;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 1.1em;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #45a049; /* Darker Green on Hover */
+    }
+    /* Style for primary buttons (e.g., Start Test, Next, Submit) */
+    .stButton button:first-child {
+        background-color: #007BFF; /* Primary Blue */
+    }
+    .stButton button:first-child:hover {
+        background-color: #0056b3; /* Darker Primary Blue on Hover */
+    }
+    /* Center elements in the main body more effectively */
+    div.stSpinner > div {
+        text-align: center;
+    }
+    div.stAlert { /* Streamlit Alerts (success, warning, error, info) */
+        font-size: 1.1em;
+    }
+    .css-h5f0l0 { /* Specific class for radio buttons in Streamlit, targeting the label */
+        color: white !important;
+    }
+    /* Sidebar styling */
+    .css-1d391kg { /* Target sidebar background */
+        background-color: #00172e; /* Slightly darker blue for sidebar */
+    }
+    .css-1f1j096 { /* Target sidebar text */
+        color: white;
+    }
+    .css-pkz2s3 p { /* Sidebar button text */
+        color: white;
+        font-size: 1.1em;
+    }
+    .css-pkz2s3 button:hover { /* Sidebar button hover */
+        background-color: #002b5c;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+add_page_animation()
+
+# --- Session State Initialization (Moved to top-level for consistent behavior) ---
+if "page" not in st.session_state:
+    st.session_state.page = "🏠 Home"
+# Initialize other session state variables here to ensure they persist across page changes
 for var, default in {
-    'page': "Home",
     'question_index': 0,
     'responses': [],
     'age': 25,
@@ -45,92 +113,51 @@ for var, default in {
     if var not in st.session_state:
         st.session_state[var] = default
 
-# --- Global CSS Styling ---
-st.markdown("""
-<style>
-.stApp {
-    background-color: #001f3f; /* Dark Blue */
-    color: white;
-}
-.stButton>button {
-    background-color: #4CAF50; /* Green */
-    color: white;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 1.1em;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-.stButton>button:hover {
-    background-color: #45a049; /* Darker Green on Hover */
-}
-/* Style for primary buttons (e.g., Start Test, Next, Submit) */
-.stButton button:first-child {
-    background-color: #007BFF; /* Primary Blue */
-}
-.stButton button:first-child:hover {
-    background-color: #0056b3; /* Darker Primary Blue on Hover */
-}
-/* Center elements in the main body more effectively */
-div.stSpinner > div {
-    text-align: center;
-}
-div.stAlert { /* Streamlit Alerts (success, warning, error, info) */
-    font-size: 1.1em;
-}
-.css-h5f0l0 { /* Specific class for radio buttons in Streamlit, targeting the label */
-    color: white !important;
-}
-/* Sidebar styling */
-.css-1d391kg { /* Target sidebar background */
-    background-color: #00172e; /* Slightly darker blue for sidebar */
-}
-.css-1f1j096 { /* Target sidebar text */
-    color: white;
-}
-.css-pkz2s3 p { /* Sidebar button text */
-    color: white;
-    font-size: 1.1em;
-}
-.css-pkz2s3 button:hover { /* Sidebar button hover */
-    background-color: #002b5c;
-}
-.bottom-image {
-    display: flex;
-    justify-content: center;
-    margin-top: 50px;
-}
-</style>
-""", unsafe_allow_html=True)
+# Sidebar navigation (kept your radio button structure)
+with st.sidebar:
+    # Add your image here if you have one, e.g., st.image(IMAGE_PATH, width=150)
+    # Check if image file exists before displaying
+    if os.path.exists(IMAGE_PATH):
+        st.image(IMAGE_PATH, width=150)
+    else:
+        st.warning(f"Warning: Image file '{IMAGE_PATH}' not found.")
 
-# --- Questionnaire Data ---
-# Using a list of dictionaries for more clarity
-QUESTIONS = [
-    {"text": "I have been able to laugh and see the funny side of things.",
-     "options": {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}},
-    {"text": "I have looked forward with enjoyment to things",
-     "options": {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}},
-    {"text": "I have blamed myself unnecessarily when things went wrong",
-     "options": {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}},
-    {"text": "I have been anxious or worried for no good reason",
-     "options": {"No, not at all": 0, "Hardly ever": 1, "Yes, sometimes": 2, "Yes, very often": 3}},
-    {"text": "I have felt scared or panicky for no very good reason",
-     "options": {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}},
-    {"text": "Things have been getting on top of me",
-     "options": {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
-                 "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}},
-    {"text": "I have been so unhappy that I have had difficulty sleeping",
-     "options": {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}},
-    {"text": "I have felt sad or miserable",
-     "options": {"No, not at all": 0, "Not very often": 1, "Yes, quite often": 2, "Yes, most of the time": 3}},
-    {"text": "I have been so unhappy that I have been crying",
-     "options": {"No, never": 0, "Only occasionally": 1, "Yes, quite often": 2, "Yes, most of the time": 3}},
-    {"text": "The thought of harming myself has occurred to me",
-     "options": {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3}}
+    st.markdown("## Navigation")
+    st.session_state.page = st.sidebar.radio(
+        "Navigate",
+        ["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"],
+        index=["🏠 Home", "📝 Take Test", "📊 Result Explanation", "📬 Feedback", "🧰 Resources"].index(st.session_state.page),
+        key="menu"
+    )
+
+menu = st.session_state.page
+
+# --- Questionnaire Data (retained your list of tuples format) ---
+q_responses = [
+    ("I have been able to laugh and see the funny side of things.",
+     {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
+    ("I have looked forward with enjoyment to things",
+     {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}),
+    ("I have blamed myself unnecessarily when things went wrong",
+     {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}),
+    ("I have been anxious or worried for no good reason",
+     {"No, not at all": 0, "Hardly ever": 1, "Yes, sometimes": 2, "Yes, very often": 3}),
+    ("I have felt scared or panicky for no very good reason",
+     {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}),
+    ("Things have been getting on top of me",
+     {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
+      "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}),
+    ("I have been so unhappy that I have had difficulty sleeping",
+     {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}),
+    ("I have felt sad or miserable",
+     {"No, not at all": 0, "Not very often": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+    ("I have been so unhappy that I have been crying",
+     {"No, never": 0, "Only occasionally": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+    ("The thought of harming myself has occurred to me",
+     {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
 ]
 
-# --- PDF Generation Function ---
+# --- PDF Generation Function (with sanitization for FPDF) ---
 def create_pdf_report(name, place, age, support, q_values, score, pred_label, tips_text):
     pdf = FPDF()
     pdf.add_page()
@@ -177,9 +204,9 @@ def create_pdf_report(name, place, age, support, q_values, score, pred_label, ti
     pdf.output(pdf_buffer)
     return pdf_buffer.getvalue()
 
-# --- Page Functions ---
 
-def home_page():
+# HOME Page
+if menu == "🏠 Home":
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
         <h1 style="font-size: 3.5em; color: white;">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
@@ -187,53 +214,47 @@ def home_page():
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
-    if st.button("Start Test", key="home_start_test"):
-        st.session_state.page = "Take Test"
+    # Ensure other session states are reset when going to Home or starting a new test
+    if st.button("📝 Start Test"):
+        st.session_state.page = "📝 Take Test"
         st.session_state.question_index = 0 # Reset questionnaire for a new test
         st.session_state.responses = []
+        st.session_state.age = 25
+        st.session_state.support = "Medium"
+        st.session_state.name = ""
+        st.session_state.place = ""
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
-def take_test_page():
-    st.header("PPD Risk Assessment Questionnaire")
+# TEST PAGE
+elif menu == "📝 Take Test":
+    st.header("📝 Questionnaire")
     st.info("Please answer the following questions to assess your PPD risk based on the Edinburgh Postnatal Depression Scale (EPDS).")
 
     idx = st.session_state.question_index
 
     if idx == 0:
         st.subheader("Personal Information")
-        name = st.text_input("First Name", value=st.session_state.name, help="Your first name for the report.")
-        place = st.text_input("Your Place", value=st.session_state.place, help="Your city or region.")
-        age = st.slider("Your Age", 18, 45, value=st.session_state.age, help="Your age in years.")
-        support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
-                               index=["High", "Medium", "Low"].index(st.session_state.support),
-                               help="How much support do you feel you receive from your family?")
+        st.session_state.name = st.text_input("First Name", value=st.session_state.name)
+        st.session_state.place = st.text_input("Your Place", value=st.session_state.place)
+        st.session_state.age = st.slider("Your Age", 18, 45, value=st.session_state.age)
+        st.session_state.support = st.selectbox("Level of Family Support", ["High", "Medium", "Low"],
+                                               index=["High", "Medium", "Low"].index(st.session_state.support))
 
-        # Update session state with collected info
-        st.session_state.name = name
-        st.session_state.place = place
-        st.session_state.age = age
-        st.session_state.support = support
-
-        st.markdown("---") # Separator
-        if st.button("Start Questionnaire", key="start_questionnaire_btn"):
+        st.markdown("---")
+        if st.button("Start Questionnaire"):
             if st.session_state.name.strip() and st.session_state.place.strip():
                 st.session_state.question_index += 1
                 st.rerun()
             else:
                 st.warning("Please enter your name and place before starting the questionnaire.")
 
-    elif 1 <= idx <= len(QUESTIONS):
-        current_q_data = QUESTIONS[idx - 1]
-        q_text = current_q_data["text"]
-        options = current_q_data["options"]
+    elif 1 <= idx <= len(q_responses): # Use len(q_responses) for the total number of questions
+        q_text, options = q_responses[idx - 1]
 
-        st.subheader(f"Question {idx} of {len(QUESTIONS)}")
+        st.subheader(f"Question {idx} of {len(q_responses)}")
         st.write(q_text)
 
         # Determine the default index for the radio button
-        # If a response for this question already exists, use its index
         default_index = 0
         if len(st.session_state.responses) >= idx:
             # Find the key (text option) corresponding to the stored value
@@ -246,27 +267,23 @@ def take_test_page():
         choice = st.radio("Select your answer:", list(options.keys()), key=f"q{idx}", index=default_index)
 
         st.markdown("---")
-        col1, col2 = st.columns([1, 1]) # Adjust column width for buttons
-
+        col1, col2 = st.columns(2)
         with col1:
-            if st.button("Previous", key=f"back_q{idx}", disabled=(idx == 1)): # Disable 'Previous' on first question
+            if st.button("⬅️ Back", key=f"back_q{idx}", disabled=(idx == 1)):
                 st.session_state.question_index -= 1
-                # Remove the response for the question we're going back from, if it exists
                 if len(st.session_state.responses) >= idx:
                     st.session_state.responses.pop()
                 st.rerun()
         with col2:
-            if st.button("Next", key=f"next_q{idx}"):
-                # Update response for the current question
-                if len(st.session_state.responses) < idx: # Append if new
+            if st.button("Next ➡️", key=f"next_q{idx}"):
+                if len(st.session_state.responses) < idx:
                     st.session_state.responses.append(options[choice])
-                else: # Overwrite if existing (e.g., after going back and changing an answer)
+                else:
                     st.session_state.responses[idx-1] = options[choice]
-
                 st.session_state.question_index += 1
                 st.rerun()
 
-    elif idx == len(QUESTIONS) + 1: # After all questions are answered
+    elif idx == len(q_responses) + 1: # After all questions are answered
         st.subheader("Your PPD Risk Prediction Result")
 
         name = st.session_state.name
@@ -276,8 +293,8 @@ def take_test_page():
         q_values = st.session_state.responses
         score = sum(q_values)
 
-        if len(q_values) != len(QUESTIONS):
-            st.error("It seems some questions were skipped. Please go back and complete all questions.")
+        if len(q_values) != len(q_responses):
+            st.error("It seems some questions were skipped or not fully answered. Please go back and complete all questions.")
             if st.button("Go back to questions"):
                 st.session_state.question_index = 1
                 st.rerun()
@@ -286,33 +303,36 @@ def take_test_page():
         # Prepare the data dictionary
         input_data = {
             "Age": [age],
-            "FamilySupport": [support], # Still passing the string initially
+            "FamilySupport": [support], # Pass the string value
             "EPDS_Score": [score]
         }
-        # Add Q1-Q10 values
+        # Add Q1-Q10 values based on your `q_responses` structure
         for i, val in enumerate(q_values):
             input_data[f"Q{i+1}"] = [val]
 
         input_df = pd.DataFrame(input_data)
 
-        # --- Re-introducing manual encoding for FamilySupport ---
-        # This is based on the assumption that your specific model pipeline expects numbers (0,1,2)
-        # for 'FamilySupport', rather than handling the string internally.
+        # --- Manual Encoding for FamilySupport ---
+        # This is CRUCIAL if your model expects numerical input for FamilySupport
         family_support_mapping = {"High": 0, "Medium": 1, "Low": 2}
+        # Apply the mapping. If 'FamilySupport' might contain NaNs or unexpected values,
+        # add .fillna(some_default_numeric_value) before converting to int.
         input_df['FamilySupport'] = input_df['FamilySupport'].map(family_support_mapping)
+
 
         # --- Robust Type Conversion and NaN Handling for all numeric columns ---
         # This is a defensive measure to ensure all numeric columns are clean
-        numeric_cols = [f"Q{i+1}" for i in range(len(QUESTIONS))] + ["Age", "EPDS_Score"]
+        # Identify all columns that should be numeric for the model
+        numeric_cols = [f"Q{i+1}" for i in range(len(q_responses))] + ["Age", "EPDS_Score", "FamilySupport"]
+
         for col in numeric_cols:
             if col in input_df.columns:
                 # Convert to numeric, coerce errors (turn non-convertible to NaN),
                 # fill any NaNs with 0 (or a suitable default), then convert to int
+                # Using fillna(0) for safety; adjust if your model expects a different default for NaNs
                 input_df[col] = pd.to_numeric(input_df[col], errors='coerce').fillna(0).astype(int)
 
         # --- IMPORTANT DEBUGGING STEPS (KEEP THESE!) ---
-        # These will display information about your DataFrame
-        # just before the prediction, which is crucial for diagnosing errors.
         st.subheader("--- Debugging Info (for developer) ---")
         st.write("DataFrame before prediction:")
         st.dataframe(input_df) # Use st.dataframe for better display
@@ -327,17 +347,24 @@ def take_test_page():
         st.subheader("--- End Debugging Info ---")
         # --- END IMPORTANT DEBUGGING STEPS ---
 
+        pred_label = "Error" # Default in case of prediction failure
+        pred_encoded = 0 # Default for gauge in case of failure
+
         try:
+            # Drop the 'Name' column as it's not a feature for the model
+            # Ensure the order of columns matches the training data, if your model is sensitive to it.
+            # A pipeline usually handles column order if it includes transformers like ColumnTransformer.
+            # If the model errors out due to column mismatch, you might need to reorder input_df.
             pred_encoded = model.predict(input_df)[0]
             pred_label = le.inverse_transform([pred_encoded])[0]
         except Exception as e:
             st.error(f"Error during prediction: {e}. This likely means the input data types or columns are not what the model expects.")
             st.warning("Please check the 'Debugging Info' above and compare it to how your model was trained.")
-            pred_label = "Error" # Fallback
-            pred_encoded = 0 # Fallback for gauge
+
 
         st.success(f"Hello {name}, your predicted PPD Risk Level is: **{pred_label}**")
         st.markdown("<p style='color:#ccc; font-style:italic;'>Note: This screening result is based on the EPDS – Edinburgh Postnatal Depression Scale. It is for informational purposes only.</p>", unsafe_allow_html=True)
+
 
         # Define colors for the gauge based on risk level
         gauge_colors = {
@@ -405,7 +432,7 @@ def take_test_page():
         }
         pred_tips = tips.get(pred_label, "Consult a professional immediately.") # Default to professional help for any undefined label
 
-        st.subheader("Personalized Tips & Recommendations")
+        st.subheader("💡 Personalized Tips")
         st.markdown(pred_tips)
 
         st.markdown("---")
@@ -413,34 +440,24 @@ def take_test_page():
         with col_res1:
             pdf_bytes = create_pdf_report(name, place, age, support, q_values, score, pred_label, pred_tips)
             b64_pdf = base64.b64encode(pdf_bytes).decode()
-            href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Risk_Report.pdf" style="background-color: #007BFF; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-block;">Download Result (PDF)</a>'
+            href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Risk_Report.pdf" style="background-color: #007BFF; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-block;">📥 Download Result (PDF)</a>'
             st.markdown(href, unsafe_allow_html=True)
         with col_res2:
-            if st.button("Take Another Test", key="restart_test"):
+            if st.button("🔄 Restart", key="restart_test"):
                 # Reset all relevant session state variables
                 st.session_state.question_index = 0
                 st.session_state.responses = []
-                st.session_state.age = 25 # Reset to default
-                st.session_state.support = "Medium" # Reset to default
-                st.session_state.name = "" # Clear name
-                st.session_state.place = "" # Clear place
-                st.session_state.page = "Take Test" # Stay on test page or go to Home
+                st.session_state.age = 25
+                st.session_state.support = "Medium"
+                st.session_state.name = ""
+                st.session_state.place = ""
+                st.session_state.page = "📝 Take Test" # Stay on test page or go to Home
                 st.rerun()
 
-def result_explanation_page():
-    st.header("Understanding Your PPD Risk Level")
-    st.info("The assessment in this app is based on the **Edinburgh Postnatal Depression Scale (EPDS)**, a widely used screening tool. Your total score from the 10 questions determines your risk category.")
-
-    st.subheader("EPDS Score Interpretation")
-    st.markdown("""
-    The EPDS is scored from 0 to 30. A higher score indicates more symptoms of depression.
-
-    * **0-9**: Typically indicates a low probability of PPD.
-    * **10-12**: Suggests a moderate probability of PPD. It's advisable to monitor symptoms and consider discussing with a healthcare professional.
-    * **13 or higher**: Strongly suggests the presence of PPD and indicates a need for professional evaluation.
-    """)
-
-    st.subheader("Risk Level Breakdown (as used in this predictor)")
+# RESULT EXPLANATION
+elif menu == "📊 Result Explanation":
+    st.header("📊 Understanding Risk Levels")
+    st.info("All assessments in this app are based on the EPDS (Edinburgh Postnatal Depression Scale), a trusted and validated 10-question tool used worldwide to screen for postpartum depression.")
     st.markdown("""
     | Risk Level | Encoded Value | EPDS Score Range (Approx.) | Meaning & Recommendation |
     | :--------- | :------------ | :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -451,8 +468,10 @@ def result_explanation_page():
     """)
     st.markdown("<p style='font-style:italic; color:#aaa;'>Disclaimer: These ranges are approximate and the model's classification may vary slightly based on other input factors like age and family support. Always consult a healthcare professional for diagnosis and treatment.</p>", unsafe_allow_html=True)
 
-def feedback_page():
-    st.header("Share Your Valuable Feedback")
+
+# FEEDBACK
+elif menu == "📬 Feedback":
+    st.header("📬 Share Feedback")
     st.write("Your input helps us improve this tool and support more mothers.")
 
     with st.form("feedback_form"):
@@ -465,15 +484,11 @@ def feedback_page():
             if message.strip() == "":
                 st.warning("Please enter your feedback before submitting.")
             else:
-                # In a real application, you would send this data to a backend (e.g., database, email service)
-                # For this demo, we'll just show a success message.
-                st.success("Thank you for your valuable feedback! We appreciate you taking the time.")
-                # Clear form fields after submission (requires re-running the script, or setting form values directly if possible in Streamlit)
-                # This often involves resetting session state variables or using a key trick for text_input
-                # For simplicity here, we just show success.
+                st.success("Thank you for your valuable feedback! 💌 We appreciate you taking the time.")
 
-def resources_page():
-    st.header("Helpful Resources & Support")
+# RESOURCES
+elif menu == "🧰 Resources":
+    st.header("Helpful Links and Support")
     st.write("If you are struggling or need support, please know that you are not alone and help is available.")
 
     st.subheader("Emergency & Crisis Support")
@@ -492,32 +507,6 @@ def resources_page():
     * **National Alliance on Mental Illness (NAMI): [Provides advocacy, education, support, and public awareness for people affected by mental illness.](https://www.nami.org/Home)
     """)
     st.markdown("<p style='font-style:italic; color:#aaa;'>Note: Please verify the contact details and website links as they may change over time.</p>", unsafe_allow_html=True)
-
-# --- Main App Logic ---
-
-# Sidebar Navigation
-with st.sidebar:
-    st.image(IMAGE_PATH, width=150)
-    st.markdown("## Navigation")
-    pages = ["Home", "Take Test", "Result Explanation", "Feedback", "Resources"]
-    for p in pages:
-        if st.button(p, key=f"sidebar_{p}"):
-            st.session_state.page = p
-            st.rerun()
-
-# Page Router
-menu = st.session_state.page
-
-if menu == "Home":
-    home_page()
-elif menu == "Take Test":
-    take_test_page()
-elif menu == "Result Explanation":
-    result_explanation_page()
-elif menu == "Feedback":
-    feedback_page()
-elif menu == "Resources":
-    resources_page()
 
 # Add a subtle footer
 st.markdown("<hr style='border:1px solid #002b5c;'>", unsafe_allow_html=True)
