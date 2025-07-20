@@ -251,7 +251,7 @@ for i, item in enumerate(nav_items):
         # Determine if the current item is the active page
         is_active = (st.session_state.page == item)
         active_class = " active" if is_active else ""
-
+        
         # Create an HTML anchor tag acting as a button
         # On click, it sets the session state variable and reruns the app.
         st.markdown(
@@ -347,11 +347,11 @@ elif menu == "Take Test":
     if 1 <= idx <= 10:
         st.markdown(f"**Question {idx} of 10**")
         q_text, options = q_responses[idx - 1]
-
+        
         current_response_value = None
         if len(st.session_state.responses) >= idx:
             current_response_value = st.session_state.responses[idx-1]
-
+        
         default_index = 0
         if current_response_value is not None:
             for i, (key, val) in enumerate(options.items()):
@@ -468,7 +468,7 @@ elif menu == "Take Test":
         pdf.cell(200, 10, txt=f"Support Level: {support}", ln=True)
         pdf.ln(5)
         pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
-
+        
         risk_color = (40, 167, 69) # Green for Mild
         if pred_label == "Moderate":
             risk_color = (255, 193, 7) # Yellow for Moderate
@@ -484,7 +484,7 @@ elif menu == "Take Test":
         pdf.ln(10)
         pdf.set_font("Arial", 'I', size=10)
         pdf.multi_cell(0, 5, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)")
-
+        
         pdf.ln(10)
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
@@ -509,7 +509,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string
+        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string for base64 encoding
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
