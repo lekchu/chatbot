@@ -251,11 +251,9 @@ for i, item in enumerate(nav_items):
         # Determine if the current item is the active page
         is_active = (st.session_state.page == item)
         active_class = " active" if is_active else ""
-        
+
         # Create an HTML anchor tag acting as a button
-        # The onclick event uses JavaScript to set the session state and scroll to top.
-        # This is a less conventional way to interact with Streamlit, but bypasses the st.button TypeError.
-        # It relies on internal Streamlit JavaScript functions which might change in future versions.
+        # On click, it sets the session state variable and reruns the app.
         st.markdown(
             f'<a href="#" onclick="window.parent.document.querySelector(\'[data-testid=\"stAppViewContainer\"]\').scrollTop = 0; document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set and document.querySelector(\'[data-testid=\"stAppViewContainer\"]\')._streamlit_instance.set({{page: \'{item}\'}});" class="nav-button{active_class}">{item}</a>',
             unsafe_allow_html=True
@@ -281,7 +279,7 @@ if menu == "Home":
         """, unsafe_allow_html=True)
 
         st.markdown("<div style='text-align: center; margin-top: 40px;'>", unsafe_allow_html=True)
-        # Using a regular st.button for "Start Test" - this should not cause the TypeError
+        # Using a regular st.button for "Start Test"
         if st.button("Start Test", key="home_start_button"):
             st.session_state.page = "Take Test"
             st.rerun()
@@ -291,7 +289,11 @@ if menu == "Home":
         st.write(" ") # Add some space or placeholder if needed for alignment
         # Replace 'maternity_care.gif' with the actual filename and path of your GIF.
         # Ensure your GIF is in the same directory as app.py, or provide a relative path.
-        st.image("maternity_care.gif", use_container_width=True)
+        # Make sure you have 'maternity_care.gif' in your project directory
+        try:
+            st.image("maternity_care.gif", use_container_width=True)
+        except FileNotFoundError:
+            st.warning("maternity_care.gif not found. Please ensure it's in the same directory.")
 
 
 # TEST PAGE
@@ -320,36 +322,36 @@ elif menu == "Take Test":
 
     q_responses = [
         ("I have been able to laugh and see the funny side of things.",
-         {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
+        {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
         ("I have looked forward with enjoyment to things",
-         {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}),
+        {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}),
         ("I have blamed myself unnecessarily when things went wrong",
-         {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}),
+        {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}),
         ("I have been anxious or worried for no good reason",
-         {"No, not at all": 0, "Hardly ever": 1, "Yes, sometimes": 2, "Yes, very often": 3}),
+        {"No, not at all": 0, "Hardly ever": 1, "Yes, sometimes": 2, "Yes, very often": 3}),
         ("I have felt scared or panicky for no very good reason",
-         {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}),
+        {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}),
         ("Things have been getting on top of me",
-         {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
-          "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}),
+        {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
+        "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}),
         ("I have been so unhappy that I have had difficulty sleeping",
-         {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}),
+        {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}),
         ("I have felt sad or miserable",
-         {"No, not at all": 0, "Not very often": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+        {"No, not at all": 0, "Not very often": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
         ("I have been so unhappy that I have been crying",
-         {"No, never": 0, "Only occasionally": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
+        {"No, never": 0, "Only occasionally": 1, "Yes, quite often": 2, "Yes, most of the time": 3}),
         ("The thought of harming myself has occurred to me",
-         {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
+        {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
     ]
 
     if 1 <= idx <= 10:
         st.markdown(f"**Question {idx} of 10**")
         q_text, options = q_responses[idx - 1]
-        
+
         current_response_value = None
         if len(st.session_state.responses) >= idx:
             current_response_value = st.session_state.responses[idx-1]
-        
+
         default_index = 0
         if current_response_value is not None:
             for i, (key, val) in enumerate(options.items()):
@@ -442,13 +444,14 @@ elif menu == "Take Test":
         st.plotly_chart(fig, use_container_width=True)
 
         tips = {
-            "Mild": "- Stay active\\n- Eat well\\n- Talk to someone\\n- Practice self-care",
-            "Moderate": "- Monitor symptoms\\n- Join a group\\n- Share with family\\n- Avoid isolation",
-            "Severe": "- Contact a therapist\\n- Alert family\\n- Prioritize mental health\\n- Reduce stressors",
-            "Profound": "- Seek urgent psychiatric help\\n- Talk to someone now\\n- Call helpline\\n- Avoid being alone"
+            "Mild": "- Stay active\n- Eat well\n- Talk to someone\n- Practice self-care",
+            "Moderate": "- Monitor symptoms\n- Join a group\n- Share with family\n- Avoid isolation",
+            "Severe": "- Contact a therapist\n- Alert family\n- Prioritize mental health\n- Reduce stressors",
+            "Profound": "- Seek urgent psychiatric help\n- Talk to someone now\n- Call helpline\n- Avoid being alone"
         }
 
         st.subheader("Personalized Tips")
+        # Use st.markdown and replace '\n' for proper rendering of bullet points
         st.markdown(tips.get(pred_label, "Consult a professional immediately.").replace('\\n', '\n'))
 
         # PDF Report Generation
@@ -465,7 +468,7 @@ elif menu == "Take Test":
         pdf.cell(200, 10, txt=f"Support Level: {support}", ln=True)
         pdf.ln(5)
         pdf.cell(200, 10, txt=f"Total EPDS Score: {score}", ln=True)
-        
+
         risk_color = (40, 167, 69) # Green for Mild
         if pred_label == "Moderate":
             risk_color = (255, 193, 7) # Yellow for Moderate
@@ -481,12 +484,13 @@ elif menu == "Take Test":
         pdf.ln(10)
         pdf.set_font("Arial", 'I', size=10)
         pdf.multi_cell(0, 5, txt="(Assessment based on the EPDS - Edinburgh Postnatal Depression Scale, a globally validated tool)")
-        
+
         pdf.ln(10)
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, txt="Personalized Tips:", ln=True)
         pdf.set_font("Arial", size=10)
-        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\\n'):
+        # Use multi_cell with explicit line breaks for tips to avoid FPDFException
+        for tip_line in tips.get(pred_label, "Consult a professional immediately.").split('\n'): # Split by actual newline
             pdf.multi_cell(0, 5, txt=tip_line)
         pdf.ln(5)
 
@@ -505,7 +509,7 @@ elif menu == "Take Test":
                 pdf.ln(2)
 
         pdf_buffer = BytesIO()
-        pdf.output(pdf_buffer, dest='S')
+        pdf.output(pdf_buffer, dest='S') # Crucial: Save to buffer as string
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">Download Result (PDF)</a>'
         st.markdown(href, unsafe_allow_html=True)
