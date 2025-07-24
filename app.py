@@ -39,7 +39,7 @@ def load_model_and_encoder():
 model, le = load_model_and_encoder()
 
 # --- Page Setup ---
-     st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide",icon="💖")
+st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide", icon="💖")
 
 # --- Load Custom Styles ---
 def load_custom_style(filepath):
