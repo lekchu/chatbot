@@ -271,45 +271,43 @@ elif menu == "Take Test":
         except Exception as e:
             st.warning(f"Could not save results to CSV: {e}")
 
-        # PDF generation using BytesIO for st.download_button
         def create_pdf_report(name, place, age, support, score, pred_label, q_responses_values):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            pdf.cell(0, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
-            pdf.ln(10) # Add some space
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
+    pdf.ln(10)  # Spacer
 
-            # Personal Info
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, txt="Personal Information:", ln=True)
-            pdf.set_font("Arial", size=12)
-            pdf.cell(0, 10, txt=f"Name: {name}", ln=True)
-            pdf.cell(0, 10, txt=f"Location: {place}", ln=True)
-            pdf.cell(0, 10, txt=f"Age: {age}", ln=True)
-            pdf.cell(0, 10, txt=f"Family Support: {support}", ln=True)
-            pdf.ln(5)
+    # Personal Info
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt="Personal Information:", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, txt=f"Name: {name}", ln=True)
+    pdf.cell(0, 10, txt=f"Location: {place}", ln=True)
+    pdf.cell(0, 10, txt=f"Age: {age}", ln=True)
+    pdf.cell(0, 10, txt=f"Family Support: {support}", ln=True)
+    pdf.ln(5)
 
-            # EPDS Score and Risk
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, txt="Assessment Results:", ln=True)
-            pdf.set_font("Arial", size=12)
-            pdf.cell(0, 10, txt=f"EPDS Score: {score}", ln=True)
-            pdf.cell(0, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
-            pdf.ln(5)
+    # EPDS Score and Risk
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt="Assessment Results:", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, txt=f"EPDS Score: {score}", ln=True)
+    pdf.cell(0, 10, txt=f"Predicted Risk Level: {pred_label}", ln=True)
+    pdf.ln(5)
 
-            # Question Details (Optional, can be added if desired)
-            if q_responses_values:
-                pdf.set_font("Arial", 'B', 12)
-                pdf.cell(0, 10, txt="Questionnaire Responses (Scores):", ln=True)
-                pdf.set_font("Arial", size=10)
-                for i, q_score in enumerate(q_responses_values):
-                    pdf.cell(0, 7, txt=f"Q{i+1}: {q_score}", ln=True)
-                pdf.ln(5)
+    # Question Details (optional)
+    if q_responses_values:
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, txt="Questionnaire Responses (Scores):", ln=True)
+        pdf.set_font("Arial", size=10)
+        for i, q_score in enumerate(q_responses_values):
+            pdf.cell(0, 7, txt=f"Q{i+1}: {q_score}", ln=True)
+        pdf.ln(5)
 
-            # Disclaimer
-            pdf.set_font("Arial", 'I', 10)
-            pdf.multi_cell(0, 5, txt="Disclaimer: This tool uses the EPDS (Edinburgh Postnatal Depression Scale) for screening purposes and provides a predicted risk level based on your responses. It is NOT a diagnostic instrument. For a definitive diagnosis and personalized treatment plan, please consult a qualified healthcare professional or mental health expert. Your well-being is paramount.", align='L')
-
+    # Disclaimer
+    pdf.set_font("Arial", 'I', 10)
+    pdf.multi_cell(0, 5, txt="Disclaimer: This tool uses the EPDS (Edinburgh Postnatal Depression Scale) for screening purposes and provides a predicted risk level based on your responses. It is NOT a diagnostic instrument. For a definitive diagnosis and personalized treatment plan, please consult a qualified healthcare professional. Your well-being is paramount.", align='L')
             pdf_output = BytesIO()
             pdf.output(pdf_output, dest='S')
             return pdf_output.getvalue()
