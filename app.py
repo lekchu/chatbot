@@ -315,6 +315,14 @@ elif menu == "Take Test":
             return pdf_output.getvalue()
 
         pdf_bytes = create_pdf_report(name, place, age, support, score, pred_label, q_values)
+st.download_button(
+    label="📄 Download PDF Report",
+    data=pdf_bytes,
+    file_name=f"{name}_PPD_Result.pdf",
+    mime="application/pdf",
+    key="download_pdf_button"
+)
+
         
         # Use st.download_button for a more reliable download experience
         st.download_button(
