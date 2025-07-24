@@ -1,50 +1,52 @@
 import random
 
-# Knowledge base grouped by maternal topics
+# --- MOMLY Knowledge Base ---
 knowledge_base = {
     "breastfeeding": [
-        "Newborns often feed every 2–3 hours. Look for cues like rooting or sucking 💕",
-        "Try to alternate sides and stay hydrated, mama! You're doing amazing 💖"
-    ],
-    "postpartum depression": [
-        "It's okay to feel overwhelmed. You're not alone 💗 Let’s talk through it.",
-        "If the sadness lasts beyond 2 weeks, consider talking to a professional. I’m here too 🌷"
+        "It's normal to feed every 2-3 hours. Watch for rooting or sucking cues 💕",
+        "Stay hydrated and try to alternate sides while nursing. You're doing amazing 💖"
     ],
     "baby sleep": [
-        "Try swaddling, white noise, and keeping a consistent bedtime routine 💤",
-        "It's normal for newborns to wake often. Rest when you can, mama 💜"
+        "Try swaddling, white noise, or gentle rocking to help baby rest 💤",
+        "Newborns wake often. Even small naps can help you recharge 💜"
+    ],
+    "postpartum sadness": [
+        "You're not alone, mama. Postpartum feelings are common and treatable 💗",
+        "Let’s take a deep breath together. Would you like some calming activities? 🌿"
     ],
     "self care": [
-        "You deserve time to breathe. Even 5 quiet minutes can help 🌿",
-        "Ask for help when needed — it’s a sign of strength, not weakness 💪"
+        "Taking care of yourself is part of caring for your baby 💆‍♀️",
+        "Even 10 minutes of rest or a walk can lift your mood 🌞"
     ],
-    "crying baby": [
-        "Babies cry for many reasons: hunger, gas, tiredness, or just needing a cuddle 🤱",
-        "Try skin-to-skin contact or gentle rocking. You're doing beautifully 💞"
+    "activities": [
+        "How about a short walk, journaling, or playing soft music? 🎶",
+        "Try drawing, stretching, or simply closing your eyes for a moment 💫"
     ],
     "default": [
-        "I'm still learning, mama 🌈 Could you tell me more?",
-        "Hmm, can you say that a bit differently? I’m here for you 💗"
+        "I'm here to listen, mama. Could you share more? 💬",
+        "Let’s get through this together. Tell me how you're feeling 💖"
     ]
 }
 
-# Keyword-based intent detection
+# --- Simple Keyword Intent Map ---
 intent_keywords = {
-    "breastfeeding": ["breastfeed", "latch", "milk", "nursing", "feed"],
-    "postpartum depression": ["sad", "depressed", "low", "crying", "blue", "mood"],
-    "baby sleep": ["sleep", "nap", "night", "awake", "bedtime"],
-    "self care": ["self", "tired", "me time", "burnout", "stress"],
-    "crying baby": ["cry", "fussy", "colic", "scream", "irritated"],
+    "breastfeeding": ["breastfeed", "milk", "latch", "feeding"],
+    "baby sleep": ["sleep", "awake", "night", "bedtime", "nap"],
+    "postpartum sadness": ["sad", "cry", "depressed", "unhappy", "blue"],
+    "self care": ["tired", "burnout", "rest", "me time", "self care"],
+    "activities": ["activity", "suggest", "what to do", "relax", "fun"]
 }
 
-def get_intent(message):
-    msg = message.lower()
+# --- Intent Detection ---
+def detect_intent(user_input):
+    msg = user_input.lower()
     for intent, keywords in intent_keywords.items():
         if any(word in msg for word in keywords):
             return intent
     return "default"
 
-def momly_response(message):
-    intent = get_intent(message)
-    responses = knowledge_base.get(intent, knowledge_base["default"])
-    return random.choice(responses)
+# --- MOMLY Response Generator ---
+def momly_response(user_input):
+    intent = detect_intent(user_input)
+    response_list = knowledge_base.get(intent, knowledge_base["default"])
+    return random.choice(response_list)
