@@ -7,28 +7,19 @@ from io import BytesIO
 import base64
 import os
 
-# Load ML model & label encoder
+# Load model and label encoder
 model = joblib.load("ppd_model_pipeline.pkl")
 le = joblib.load("label_encoder.pkl")
 
-# Set page configuration
+# Streamlit page config
 st.set_page_config(page_title="PPD Risk Predictor", layout="wide")
 
-# Background image
-def add_background():
-    st.markdown("""
-    <style>
-    .stApp {
-        background-image: url('images/maternity_care.png');
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: right bottom;
-        background-color: #f7f0f5;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# Load custom CSS
+def load_custom_style():
+    with open("style/app_style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-add_background()
+load_custom_style()
 
 # Sidebar navigation
 if "page" not in st.session_state:
@@ -43,13 +34,14 @@ st.session_state.page = st.sidebar.radio(
 
 menu = st.session_state.page
 
-# ------------------ HOME ------------------
+# ---------------- HOME ----------------
 if menu == "Home":
+    st.image("images/maternity_care.png", width=250)
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
-        <h1 style="font-size: 3.5em; color: #c94f7c;">POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
-        <h3 style="font-size: 1.6em; color: #666;">Empowering maternal health through smart technology</h3>
-        <p style="font-size:1.1em; color: #444;">Take a quick test to assess your mood and mental health after childbirth. Based on EPDS – a trusted international tool.</p>
+        <h1>POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
+        <h3>Empowering maternal health through smart technology</h3>
+        <p style="font-size:1.1em;">Take a quick and private screening based on the EPDS to understand your emotional wellbeing.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -59,9 +51,9 @@ if menu == "Home":
         st.session_state.page = "Take Test"
         st.rerun()
 
-# ------------------ TEST ------------------
+# --------------- TAKE TEST ----------------
 elif menu == "Take Test":
-    st.header("Postpartum Depression Screening Questionnaire")
+    st.header("Postpartum Depression Questionnaire")
 
     for var, default in {
         'question_index': 0,
@@ -93,7 +85,7 @@ elif menu == "Take Test":
         ("I have been able to laugh and see the funny side of things.",
          {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
         ("I have looked forward with enjoyment to things",
-         {"As much as I ever did": 0, "Rather less than I used to": 1, "Definitely less than I used to": 2, "Hardly at all": 3}),
+         {"As much as I ever did": 0, "Rather less than I": 1, "Definitely less": 2, "Hardly at all": 3}),
         ("I have blamed myself unnecessarily when things went wrong",
          {"No, never": 0, "Not very often": 1, "Yes, some of the time": 2, "Yes, most of the time": 3}),
         ("I have been anxious or worried for no good reason",
@@ -101,8 +93,8 @@ elif menu == "Take Test":
         ("I have felt scared or panicky for no very good reason",
          {"No, not at all": 0, "No, not much": 1, "Yes, sometimes": 2, "Yes, quite a lot": 3}),
         ("Things have been getting on top of me",
-         {"No, I have been coping as well as ever": 0, "No, most of the time I have coped quite well": 1,
-          "Yes, sometimes I haven't been coping as well as usual": 2, "Yes, most of the time I haven't been able to cope at all": 3}),
+         {"No, I have been coping well": 0, "Most of the time I coped": 1,
+          "Sometimes I didn’t cope well": 2, "Most of the time I couldn’t cope": 3}),
         ("I have been so unhappy that I have had difficulty sleeping",
          {"No, not at all": 0, "Not very often": 1, "Yes, sometimes": 2, "Yes, most of the time": 3}),
         ("I have felt sad or miserable",
@@ -172,9 +164,9 @@ elif menu == "Take Test":
         }
 
         st.subheader("Personalized Tips")
-        st.markdown(tips.get(pred_label, "Please consult a healthcare professional."))
+        st.markdown(tips.get(pred_label, "Please consult a mental health professional immediately."))
 
-        # Save to CSV (optional)
+        # Save to CSV
         os.makedirs("data", exist_ok=True)
         input_df.to_csv("data/ppd_results.csv", mode='a', index=False, header=not os.path.exists("data/ppd_results.csv"))
 
@@ -182,7 +174,7 @@ elif menu == "Take Test":
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Postpartum Depression Risk Prediction", ln=True, align='C')
+        pdf.cell(200, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
         pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
         pdf.cell(200, 10, txt=f"Place: {place}", ln=True)
         pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
@@ -194,7 +186,46 @@ elif menu == "Take Test":
         pdf.output(pdf_buffer)
         b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
         href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">📄 Download Result (PDF)</a>'
-        st.markdown(href, unsafe_all_
+        st.markdown(href, unsafe_allow_html=True)
+
+        if st.button("Restart"):
+            for key in ['question_index', 'responses', 'age', 'support', 'name', 'place']:
+                st.session_state.pop(key, None)
+            st.rerun()
+
+# ----------- MOMLY CHATBOT ------------
+elif menu == "Chat with MOMLY":
+    st.switch_page("momly_chatbot.py")
+
+# ----------- RESULT EXPLANATION ------------
+elif menu == "Result Explanation":
+    st.header("Understanding Your Risk Level")
+    st.markdown("""
+    | Risk Level | What It Means |
+    |------------|----------------|
+    | Mild       | Normal ups and downs after childbirth |
+    | Moderate   | May need support from friends/family |
+    | Severe     | May benefit from therapy or guidance |
+    | Profound   | Strongly consider professional help immediately |
+    """)
+
+# ----------- FEEDBACK ------------
+elif menu == "Feedback":
+    st.header("We value your feedback 💬")
+    name = st.text_input("Your Name")
+    message = st.text_area("Your Feedback")
+    if st.button("Submit"):
+        st.success("Thank you for your kind feedback!")
+
+# ----------- RESOURCES ------------
+elif menu == "Resources":
+    st.header("Helpful Links & Support")
+    st.markdown("""
+    - 📞 [National Mental Health Helpline - 1800-599-0019](https://www.mohfw.gov.in)
+    - 🌐 [WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
+    - 💞 [Postpartum Support International](https://www.postpartum.net/)
+    """)
+
 
 
         
