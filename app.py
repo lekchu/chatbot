@@ -14,7 +14,7 @@ from momly_chatbot import get_momly_reply, USE_LLM
 # --- Streamlit Page Configuration ---
 # THIS MUST BE THE VERY FIRST STREAMLIT COMMAND CALLED!
 # Any st.write(), st.sidebar.radio(), st.button() etc. before this will cause the error.
-st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide", icon="💖")
+st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide")
 
 # --- Configuration Paths ---
 MODEL_PATH = "ppd_model_pipeline.pkl"
