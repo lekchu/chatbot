@@ -1,15 +1,42 @@
+# app_style.css for MOMLY (light theme + elegant chat)
+
+# Import Google Font
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap');
 
+/* Base Layout */
 body, .stApp {
-    background-color: #003300;
+    background-color: #f9f9f9;
+    color: #222222;
     font-family: 'Quicksand', sans-serif;
-    color: white;
 }
 
-/* Chat bubbles */
+/* Headings */
+h1, h2, h3, h4 {
+    color: #c94f7c;
+    font-weight: 600;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #c94f7c;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 600;
+}
+
+/* Input Fields */
+input, textarea, select {
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+
+/* Chat Bubbles */
 .momly-bubble {
     background-color: #ffe6f0;
-    color: black;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
@@ -20,7 +47,6 @@ body, .stApp {
 
 .user-bubble {
     background-color: #d9fdd3;
-    color: black;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
@@ -35,7 +61,7 @@ body, .stApp {
     to {opacity: 1;}
 }
 
-/* MOMLY floating image */
+/* Floating Chatbot Image */
 .momly-character-floating {
     position: fixed;
     bottom: 20px;
@@ -43,22 +69,36 @@ body, .stApp {
     width: 80px;
     height: auto;
     z-index: 1002;
+    animation: bounce 4s infinite;
 }
 
-/* Right-side chat container */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Chat Container Styling */
 #momly-chat-container {
     position: fixed;
     right: 20px;
-    bottom: 100px;
+    bottom: 120px;
     width: 320px;
     max-height: 70vh;
     overflow-y: auto;
-    background-color: #1a1a1a;
+    background-color: white;
     border-radius: 15px;
-    box-shadow: 0 0 15px rgba(201, 79, 124, 0.6);
+    box-shadow: 0 0 15px rgba(201, 79, 124, 0.3);
     z-index: 1001;
     padding: 15px;
-    color: white;
+}
+
+/* Tips / Highlights */
+.risk-tip {
+    background-color: #fff0f5;
+    padding: 10px;
+    border-left: 6px solid #c94f7c;
+    border-radius: 5px;
+    margin-bottom: 10px;
 }
 
 /* Responsive */
@@ -68,10 +108,10 @@ body, .stApp {
         right: 5%;
         bottom: 100px;
     }
-
     .momly-character-floating {
         width: 60px;
         right: 10px;
         bottom: 10px;
     }
 }
+
