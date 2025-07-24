@@ -6,6 +6,7 @@ from fpdf import FPDF
 from io import BytesIO
 import os
 import random
+import base64 # <-- Make sure to add this import!
 
 # Import the chatbot functionality from momly_chatbot.py
 # Make sure momly_chatbot.py exists in the same directory!
@@ -22,6 +23,8 @@ ENCODER_PATH = "label_encoder.pkl"
 STYLE_PATH = "style/app_style.css"
 IMAGE_PATH = "images/maternity_care.png"
 RESULTS_CSV_PATH = "data/ppd_results.csv"
+# Add your MOMLY character GIF path
+MOMLY_CHARACTER_GIF_PATH = "images/momly_character.gif" # 
 
 # Ensure necessary directories exist *before* trying to access files in them
 os.makedirs("data", exist_ok=True)
@@ -54,7 +57,7 @@ def load_custom_style(filepath):
     else:
         st.warning(f"Custom style file not found at {filepath}. Using default Streamlit styles.")
 
-load_custom_style(STYLE_PATH)
+load_custom_style(STYLE_PATH) # This will now load your momly-character CSS as well 
 
 # --- Session State Initialization ---
 # Initialize session state variables if they don't exist
@@ -337,6 +340,15 @@ elif menu == "Chat with MOMLY":
     st.markdown("<h2 style='text-align:center; color:#fdd;'>🤱 MOMLY - Your Gentle Friend</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#ccc;'>I'm here to support you anytime, mama 🌸</p>", unsafe_allow_html=True)
 
+    # --- MOMLY Animated Character (Modified to use external CSS) ---
+    if os.path.exists(MOMLY_CHARACTER_GIF_PATH):
+        st.markdown(f"""
+        <img src="data:image/gif;base64,{base64.b64encode(open(MOMLY_CHARACTER_GIF_PATH, 'rb').read()).decode()}" class="momly-character">
+        """, unsafe_allow_html=True)
+    else:
+        st.warning(f"MOMLY character GIF not found at {MOMLY_CHARACTER_GIF_PATH}.")
+    # --- End of MOMLY Animated Character Addition --- 
+
     if USE_LLM:
         st.info("MOMLY is currently powered by an intelligent model. Responses may vary.")
     else:
@@ -406,4 +418,3 @@ elif menu == "Resources":
     * **📚 National Institute of Mental Health (NIMH) - PPD:** [Information on Postpartum Depression](https://www.nimh.nih.gov/health/topics/depression/postpartum-depression) - Comprehensive guide.
     * **💡 Local Support Groups:** Search for local postpartum support groups in your area. Many hospitals and community centers offer them.
     """)
-
