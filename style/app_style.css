@@ -1,29 +1,15 @@
-/* Import font */
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap');
 
-/* Overall style */
 body, .stApp {
     background-color: #003300;
     font-family: 'Quicksand', sans-serif;
     color: white;
-    transition: background-color 1s ease;
-}
-
-/* Headings */
-h1, h2, h3 {
-    font-weight: 600;
-    color: #fdd;
-}
-
-/* Paragraph and text */
-p, label, .css-10trblm {
-    color: #eee;
-    font-size: 1.05em;
 }
 
 /* Chat bubbles */
 .momly-bubble {
     background-color: #ffe6f0;
+    color: black;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
@@ -34,6 +20,7 @@ p, label, .css-10trblm {
 
 .user-bubble {
     background-color: #d9fdd3;
+    color: black;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
@@ -43,36 +30,48 @@ p, label, .css-10trblm {
     animation: fadeIn 0.5s ease-in;
 }
 
-/* Fade-in animation */
 @keyframes fadeIn {
     from {opacity: 0;}
     to {opacity: 1;}
 }
 
-/* Buttons */
-button, .stButton > button {
-    background-color: #c94f7c !important;
-    color: white !important;
-    border-radius: 10px !important;
-}
-
-/* --- New styles for MOMLY character --- */
-.momly-character {
-    position: fixed; /* Fixes the position relative to the viewport */
-    right: 20px;     /* Distance from the right edge */
-    bottom: 20px;    /* Distance from the bottom edge */
-    width: 150px;    /* Adjust size as needed */
+/* MOMLY floating image */
+.momly-character-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 80px;
     height: auto;
-    z-index: 1000;   /* Ensure it's above other elements */
-    pointer-events: none; /* Allows clicks to pass through to elements behind it if desired */
+    z-index: 1002;
 }
 
-/* Optional: Media query for smaller screens to hide or resize */
+/* Right-side chat container */
+#momly-chat-container {
+    position: fixed;
+    right: 20px;
+    bottom: 100px;
+    width: 320px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background-color: #1a1a1a;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(201, 79, 124, 0.6);
+    z-index: 1001;
+    padding: 15px;
+    color: white;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .momly-character {
-        width: 100px; /* Smaller size on mobile */
+    #momly-chat-container {
+        width: 90%;
+        right: 5%;
+        bottom: 100px;
+    }
+
+    .momly-character-floating {
+        width: 60px;
         right: 10px;
         bottom: 10px;
     }
 }
-/* --- End of new styles --- */
