@@ -272,11 +272,11 @@ elif menu == "Take Test":
             st.warning(f"Could not save results to CSV: {e}")
 
         def create_pdf_report(name, place, age, support, score, pred_label, q_responses_values):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
-    pdf.ln(10)  # Spacer
+       pdf = FPDF()
+       pdf.add_page()
+       pdf.set_font("Arial", size=12)
+       pdf.cell(0, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
+       pdf.ln(10)  # Spacer
 
     # Personal Info
     pdf.set_font("Arial", 'B', 12)
