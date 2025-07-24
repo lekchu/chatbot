@@ -1,11 +1,3 @@
-
-The `SyntaxError: 'return' outside function` in your Streamlit application occurs because a `return` statement is placed directly in the main script body, outside of any defined function.
-
-To correct this error, you need to remove the `return` statement from line 287 in your `app (4).py` file. The existing logic with `st.session_state.question_index = 1` and `st.rerun()` already handles the redirection correctly, making the `return` statement redundant and syntactically incorrect in that context.
-
-Here is the corrected code for `app (4).py`:
-
-```python
 import streamlit as st
 import pandas as pd
 import joblib
