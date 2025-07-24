@@ -1,0 +1,30 @@
+/* Main app style */
+body, .stApp {
+    background-color: #f7f0f5;
+    font-family: 'Helvetica', sans-serif;
+}
+
+/* Page title */
+h1, h2 {
+    color: #c94f7c;
+}
+
+/* Chat bubbles and buttons (optional) */
+.momly-bubble {
+    background-color: #ffe6f0;
+    padding: 12px 16px;
+    border-radius: 20px;
+    margin: 6px 0;
+    max-width: 80%;
+    display: inline-block;
+}
+
+.user-bubble {
+    background-color: #d9fdd3;
+    padding: 12px 16px;
+    border-radius: 20px;
+    margin: 6px 0;
+    max-width: 80%;
+    display: inline-block;
+    float: right;
+}
