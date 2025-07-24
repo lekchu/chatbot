@@ -55,3 +55,24 @@ button, .stButton > button {
     color: white !important;
     border-radius: 10px !important;
 }
+
+/* --- New styles for MOMLY character --- */
+.momly-character {
+    position: fixed; /* Fixes the position relative to the viewport */
+    right: 20px;     /* Distance from the right edge */
+    bottom: 20px;    /* Distance from the bottom edge */
+    width: 150px;    /* Adjust size as needed */
+    height: auto;
+    z-index: 1000;   /* Ensure it's above other elements */
+    pointer-events: none; /* Allows clicks to pass through to elements behind it if desired */
+}
+
+/* Optional: Media query for smaller screens to hide or resize */
+@media (max-width: 768px) {
+    .momly-character {
+        width: 100px; /* Smaller size on mobile */
+        right: 10px;
+        bottom: 10px;
+    }
+}
+/* --- End of new styles --- */
