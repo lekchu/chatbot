@@ -171,27 +171,40 @@ elif menu == "Take Test":
         input_df.to_csv("data/ppd_results.csv", mode='a', index=False, header=not os.path.exists("data/ppd_results.csv"))
 
         # Create PDF safely
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
-        pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
-        pdf.cell(200, 10, txt=f"Location: {place}", ln=True)
-        pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
-        pdf.cell(200, 10, txt=f"Support: {support}", ln=True)
-        pdf.cell(200, 10, txt=f"Score: {score}", ln=True)
-        pdf.cell(200, 10, txt=f"Predicted Risk: {pred_label}", ln=True)
-        pdf.cell(200, 10, txt="Based on EPDS – Edinburgh Postnatal Depression Scale", ln=True)
+       from fpdf import FPDF
 
-        pdf_output = pdf.output(dest='S').encode('latin-1', 'ignore')
-        b64_pdf = base64.b64encode(pdf_output).decode('utf-8')
-        href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Report.pdf">📄 Download PDF Report</a>'
-        st.markdown(href, unsafe_allow_html=True)
+def generate_pdf_report(name, place, age, support, score, pred_label):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
 
-        if st.button("Restart"):
-            for key in ['question_index', 'responses', 'age', 'support', 'name', 'place']:
-                st.session_state.pop(key, None)
-            st.rerun()
+    # Clean header
+    pdf.cell(200, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
+    pdf.ln(5)
+
+    # Text fields (no emojis)
+    lines = [
+        f"Name: {name}",
+        f"Location: {place}",
+        f"Age: {age}",
+        f"Family Support: {support}",
+        f"EPDS Score: {score}",
+        f"Predicted Risk Level: {pred_label}",
+        "Based on EPDS – Edinburgh Postnatal Depression Scale.",
+        "This tool does not replace clinical diagnosis."
+    ]
+
+    for line in lines:
+        # Remove any non-latin characters
+        safe_line = line.encode('latin-1', 'ignore').decode('latin-1')
+        pdf.cell(200, 10, txt=safe_line, ln=True)
+
+    # Output as downloadable PDF
+    pdf_bytes = pdf.output(dest='S').encode('latin-1', 'ignore')
+    b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+    download_link = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Report.pdf">📄 Download Your PDF Report</a>'
+    return download_link
+
 
 # ----------------- MOMLY CHATBOT -----------------
 elif menu == "Chat with MOMLY":
