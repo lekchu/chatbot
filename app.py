@@ -12,10 +12,10 @@ import random
 model = joblib.load("ppd_model_pipeline.pkl")
 le = joblib.load("label_encoder.pkl")
 
-# Set up page
+# Page setup
 st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide")
 
-# Load custom styles
+# Load style
 def load_custom_style():
     with open("style/app_style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -35,14 +35,14 @@ st.session_state.page = st.sidebar.radio(
 
 menu = st.session_state.page
 
-# -------- HOME --------
+# ----------------- HOME -----------------
 if menu == "Home":
     st.image("images/maternity_care.png", width=250)
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
         <h1>POSTPARTUM DEPRESSION RISK PREDICTOR</h1>
         <h3>Empowering maternal health through smart technology</h3>
-        <p style="font-size:1.1em;">Take a quick screening and get personalized support. You are not alone 💖</p>
+        <p style="font-size:1.1em;">Take a quick screening and get personalized support. You are not alone.</p>
     </div>
     """, unsafe_allow_html=True)
     st.video("https://www.youtube.com/watch?v=2OEL4P1Rz04")
@@ -51,7 +51,7 @@ if menu == "Home":
         st.session_state.page = "Take Test"
         st.rerun()
 
-# -------- TEST --------
+# ----------------- TAKE TEST -----------------
 elif menu == "Take Test":
     st.header("Postpartum Depression Questionnaire")
 
@@ -166,25 +166,26 @@ elif menu == "Take Test":
         st.subheader("Personalized Tips")
         st.markdown(tips.get(pred_label, "Please consult a mental health professional immediately."))
 
+        # Save to CSV
         os.makedirs("data", exist_ok=True)
         input_df.to_csv("data/ppd_results.csv", mode='a', index=False, header=not os.path.exists("data/ppd_results.csv"))
 
-        # PDF fix for Streamlit Cloud
+        # Create PDF safely
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
         pdf.cell(200, 10, txt="Postpartum Depression Risk Report", ln=True, align='C')
         pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
-        pdf.cell(200, 10, txt=f"Place: {place}", ln=True)
+        pdf.cell(200, 10, txt=f"Location: {place}", ln=True)
         pdf.cell(200, 10, txt=f"Age: {age}", ln=True)
         pdf.cell(200, 10, txt=f"Support: {support}", ln=True)
         pdf.cell(200, 10, txt=f"Score: {score}", ln=True)
         pdf.cell(200, 10, txt=f"Predicted Risk: {pred_label}", ln=True)
-        pdf.cell(200, 10, txt="Tool used: EPDS – Edinburgh Postnatal Depression Scale", ln=True)
+        pdf.cell(200, 10, txt="Based on EPDS – Edinburgh Postnatal Depression Scale", ln=True)
 
-        pdf_data = pdf.output(dest='S').encode('latin1')
-        b64_pdf = base64.b64encode(pdf_data).decode('utf-8')
-        href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Result.pdf">📄 Download PDF Report</a>'
+        pdf_output = pdf.output(dest='S').encode('latin-1', 'ignore')
+        b64_pdf = base64.b64encode(pdf_output).decode('utf-8')
+        href = f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Report.pdf">📄 Download PDF Report</a>'
         st.markdown(href, unsafe_allow_html=True)
 
         if st.button("Restart"):
@@ -192,48 +193,44 @@ elif menu == "Take Test":
                 st.session_state.pop(key, None)
             st.rerun()
 
-# -------- MOMLY CHATBOT --------
+# ----------------- MOMLY CHATBOT -----------------
 elif menu == "Chat with MOMLY":
-    st.markdown("<h2 style='text-align:center; color:#fdd;'>🤱 MOMLY - Your Gentle Friend</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#ccc;'>I'm here to support you anytime, mama 🌸</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>🤱 MOMLY - Your Gentle Friend</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>I'm here to support you anytime.</p>", unsafe_allow_html=True)
 
     if "momly_chat" not in st.session_state:
-        st.session_state.momly_chat = []
-        st.session_state.momly_chat.append(("momly", "Hi sweet mama 💖 How are you feeling today?"))
+        st.session_state.momly_chat = [("momly", "Hi mama! How are you feeling today?")]
 
     def get_momly_reply(user_message):
         msg = user_message.lower()
         if any(word in msg for word in ["sad", "tired", "lonely", "anxious", "depressed"]):
             return random.choice([
-                "You're not alone — take a deep breath with me 🌷",
-                "These feelings are valid, and I’m here with you 💛",
-                "Would you like a calming video or breathing exercise?"
+                "You're not alone. Want to take a deep breath together?",
+                "It's okay to feel this way. I'm here with you.",
+                "Would you like a calming tip or video?"
             ])
-        elif any(word in msg for word in ["happy", "better", "relaxed", "good"]):
+        elif any(word in msg for word in ["happy", "good", "better", "relaxed"]):
             return random.choice([
-                "That’s beautiful to hear! Keep shining ✨",
-                "So glad to hear that 🌼 Want a journal prompt?"
+                "I'm glad to hear that! Keep it up!",
+                "Beautiful. Would you like to reflect on it?"
             ])
         elif "activity" in msg:
-            return "Try a short walk, a drawing, or a gratitude list 💚"
+            return "Try a short walk, journaling, or stretching. It might help clear your mind."
         elif "video" in msg:
-            return "Here’s something soothing: [Relaxing Video](https://www.youtube.com/watch?v=2OEL4P1Rz04)"
+            return "Here's something soothing: https://www.youtube.com/watch?v=2OEL4P1Rz04"
         elif "help" in msg or "emergency" in msg:
-            return "Please contact a mental health line or a loved one immediately. You are loved ❤️"
+            return "Please reach out to a loved one or a helpline immediately. You're not alone."
         else:
             return random.choice([
-                "I'm here to listen 🌷",
-                "Tell me more. You're doing great 💖",
-                "Would an affirmation help right now?"
+                "Tell me more.",
+                "I'm here and listening.",
+                "Would a gentle affirmation help now?"
             ])
 
     for sender, msg in st.session_state.momly_chat:
-        bubble_color = "#ffe6f0" if sender == "momly" else "#d9fdd3"
+        bg = "#ffe6f0" if sender == "momly" else "#d9fdd3"
         align = "left" if sender == "momly" else "right"
-        st.markdown(f"""
-        <div style='background-color:{bubble_color}; padding:10px 15px; border-radius:20px; margin:6px 0; max-width:75%; float:{align}; clear:both; color:black;'>
-            {msg}
-        </div>""", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:{bg}; padding:10px 15px; border-radius:20px; max-width:75%; float:{align}; clear:both;'>{msg}</div>", unsafe_allow_html=True)
 
     user_input = st.text_input("You:", placeholder="How are you feeling today?", key="chat_input")
     if user_input:
@@ -242,22 +239,22 @@ elif menu == "Chat with MOMLY":
         st.experimental_rerun()
 
     if st.button("🧹 Clear Chat"):
-        st.session_state.momly_chat = [("momly", "Hi again 🌸 How are you feeling today?")]
+        st.session_state.momly_chat = [("momly", "Hi again! How are you feeling now?")]
         st.experimental_rerun()
 
-# -------- RESULT INFO --------
+# ----------------- EXPLANATION -----------------
 elif menu == "Result Explanation":
     st.header("Understanding Your Risk Level")
     st.markdown("""
     | Risk Level | Meaning |
-    |------------|----------------|
-    | Mild       | Normal emotional ups/downs |
-    | Moderate   | Monitor mood, talk to someone |
-    | Severe     | May need therapy/support |
+    |------------|---------|
+    | Mild       | Normal ups and downs |
+    | Moderate   | Needs monitoring/support |
+    | Severe     | Therapy may help |
     | Profound   | Seek professional help soon |
     """)
 
-# -------- FEEDBACK --------
+# ----------------- FEEDBACK -----------------
 elif menu == "Feedback":
     st.header("We value your feedback 💬")
     name = st.text_input("Your Name")
@@ -265,11 +262,11 @@ elif menu == "Feedback":
     if st.button("Submit"):
         st.success("Thank you for your kind feedback!")
 
-# -------- RESOURCES --------
+# ----------------- RESOURCES -----------------
 elif menu == "Resources":
-    st.header("Helpful Links & Support")
+    st.header("Helpful Links")
     st.markdown("""
-    - 📞 [India Mental Health Helpline - 1800-599-0019](https://www.mohfw.gov.in)
-    - 🌐 [WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
-    - 💞 [Postpartum Support International](https://www.postpartum.net/)
+    - [National Mental Health Helpline (India) – 1800-599-0019](https://www.mohfw.gov.in)
+    - [Postpartum Support International](https://www.postpartum.net/)
+    - [WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     """)
