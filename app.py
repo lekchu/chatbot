@@ -8,16 +8,22 @@ import os
 import random
 
 # Import the chatbot functionality from momly_chatbot.py
-from momly_chatbot import get_momly_reply, USE_LLM # Import USE_LLM for conditional UI
+# Make sure momly_chatbot.py exists in the same directory!
+from momly_chatbot import get_momly_reply, USE_LLM 
 
-# --- Configuration ---
+# --- Streamlit Page Configuration ---
+# THIS MUST BE THE VERY FIRST STREAMLIT COMMAND CALLED!
+# Any st.write(), st.sidebar.radio(), st.button() etc. before this will cause the error.
+st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide", icon="💖")
+
+# --- Configuration Paths ---
 MODEL_PATH = "ppd_model_pipeline.pkl"
 ENCODER_PATH = "label_encoder.pkl"
 STYLE_PATH = "style/app_style.css"
 IMAGE_PATH = "images/maternity_care.png"
 RESULTS_CSV_PATH = "data/ppd_results.csv"
 
-# Ensure necessary directories exist
+# Ensure necessary directories exist *before* trying to access files in them
 os.makedirs("data", exist_ok=True)
 os.makedirs("style", exist_ok=True)
 os.makedirs("images", exist_ok=True)
@@ -25,24 +31,23 @@ os.makedirs("images", exist_ok=True)
 # --- Load Model and Encoder ---
 @st.cache_resource
 def load_model_and_encoder():
+    """Loads the pre-trained model and label encoder, stopping the app if files are missing."""
     try:
         model = joblib.load(MODEL_PATH)
         le = joblib.load(ENCODER_PATH)
         return model, le
     except FileNotFoundError as e:
         st.error(f"Required file not found: {e}. Please ensure '{MODEL_PATH}' and '{ENCODER_PATH}' are in the root directory.")
-        st.stop() # Stop the app if essential files are missing
+        st.stop()
     except Exception as e:
-        st.error(f"Error loading model or encoder: {e}. Please check your .pkl files.")
+        st.error(f"Error loading model or encoder: {e}. Please check your .pkl files and their compatibility.")
         st.stop()
 
 model, le = load_model_and_encoder()
 
-# --- Page Setup ---
-st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide", icon="💖")
-
 # --- Load Custom Styles ---
 def load_custom_style(filepath):
+    """Loads and applies custom CSS styles from a file."""
     if os.path.exists(filepath):
         with open(filepath) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -52,6 +57,7 @@ def load_custom_style(filepath):
 load_custom_style(STYLE_PATH)
 
 # --- Session State Initialization ---
+# Initialize session state variables if they don't exist
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
@@ -68,7 +74,7 @@ st.session_state.page = st.sidebar.radio(
 
 menu = st.session_state.page
 
-# --- Page Content ---
+# --- Page Content Sections ---
 
 # -------- HOME --------
 if menu == "Home":
@@ -76,7 +82,7 @@ if menu == "Home":
         st.image(IMAGE_PATH, width=250)
     else:
         st.warning(f"Image not found at {IMAGE_PATH}. Please ensure it exists.")
-        st.empty() # Placeholder for the image
+        st.empty() # Placeholder for the image to prevent layout issues
 
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
@@ -86,9 +92,11 @@ if menu == "Home":
     </div>
     """, unsafe_allow_html=True)
     
+    # Placeholder for a real YouTube video ID (e.g., "dQw4w9WgXcQ")
+    # This URL is just a placeholder and will not play an actual video unless replaced.
     st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ") 
 
-    if st.button("Start Test"):
+    if st.button("Start Test", key="home_start_test_button"):
         st.session_state.page = "Take Test"
         st.rerun()
 
@@ -96,9 +104,10 @@ if menu == "Home":
 elif menu == "Take Test":
     st.header("Postpartum Depression Questionnaire")
 
+    # Initialize test-specific session state variables
     for var, default in {
         'question_index': 0,
-        'responses': [],
+        'responses': [], # Stores scores (0-3) for each question
         'age': 25,
         'support': "Medium",
         'name': "",
@@ -109,6 +118,7 @@ elif menu == "Take Test":
 
     idx = st.session_state.question_index
 
+    # Initial information input page
     if idx == 0:
         st.session_state.name = st.text_input("Your Name", value=st.session_state.name, key="name_input")
         st.session_state.place = st.text_input("Your Location", value=st.session_state.place, key="place_input")
@@ -122,6 +132,7 @@ elif menu == "Take Test":
             else:
                 st.warning("Please enter your name and location before starting.")
 
+    # EPDS Questionnaire Questions and Options
     q_responses = [
         ("I have been able to laugh and see the funny side of things.",
          {"As much as I always could": 0, "Not quite so much now": 1, "Definitely not so much now": 2, "Not at all": 3}),
@@ -146,6 +157,7 @@ elif menu == "Take Test":
          {"Never": 0, "Hardly ever": 1, "Sometimes": 2, "Yes, quite often": 3})
     ]
 
+    # Display questionnaire pages
     if 1 <= idx <= 10:
         q_text, options = q_responses[idx - 1]
         
@@ -160,6 +172,7 @@ elif menu == "Take Test":
         
         # Default to the first option if no prior response or current_response_key not found
         default_index = list(options.keys()).index(current_response_key) if current_response_key else 0
+        
         choice = st.radio(f"{idx}. {q_text}", list(options.keys()), index=default_index, key=f"q_radio_{idx}")
         
         col1, col2 = st.columns(2)
@@ -185,10 +198,9 @@ elif menu == "Take Test":
             st.session_state.question_index += 1
             st.rerun()
 
+    # Display results page
     elif idx == 11:
         # Before processing, ensure all 10 responses are correctly captured.
-        # This part assumes the 'Next' button logic correctly adds/updates responses.
-        # If the user somehow lands here without completing, they might see an error.
         if len(st.session_state.responses) != 10:
             st.warning("It seems some questions were skipped or not recorded. Please go back to ensure all 10 questions are answered.")
             if st.button("Return to Questions", key="return_to_questions"):
@@ -221,6 +233,7 @@ elif menu == "Take Test":
 
         st.success(f"{name}, your predicted PPD Risk is: {pred_label}")
 
+        # Display risk level using Plotly Gauge
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=pred_encoded,
@@ -238,6 +251,7 @@ elif menu == "Take Test":
         ))
         st.plotly_chart(fig, use_container_width=True)
 
+        # Personalized tips based on predicted risk
         tips = {
             "Mild": "- Stay active\n- Eat well\n- Talk to someone\n- Practice self-care",
             "Moderate": "- Monitor symptoms\n- Join a group\n- Share with family\n- Avoid isolation",
@@ -251,7 +265,6 @@ elif menu == "Take Test":
         # Save results to CSV
         try:
             # Check if file exists to decide on header.
-            # Create data folder if it doesn't exist.
             if not os.path.exists(os.path.dirname(RESULTS_CSV_PATH)):
                 os.makedirs(os.path.dirname(RESULTS_CSV_PATH))
             input_df.to_csv(RESULTS_CSV_PATH, mode='a', index=False, header=not os.path.exists(RESULTS_CSV_PATH))
@@ -290,16 +303,12 @@ elif menu == "Take Test":
                 pdf.cell(0, 10, txt="Questionnaire Responses (Scores):", ln=True)
                 pdf.set_font("Arial", size=10)
                 for i, q_score in enumerate(q_responses_values):
-                    # You might want to map score back to text option for more detail
-                    # This would require passing the full q_responses dictionary
                     pdf.cell(0, 7, txt=f"Q{i+1}: {q_score}", ln=True)
                 pdf.ln(5)
-
 
             # Disclaimer
             pdf.set_font("Arial", 'I', 10)
             pdf.multi_cell(0, 5, txt="Disclaimer: This tool uses the EPDS (Edinburgh Postnatal Depression Scale) for screening purposes and provides a predicted risk level based on your responses. It is NOT a diagnostic instrument. For a definitive diagnosis and personalized treatment plan, please consult a qualified healthcare professional or mental health expert. Your well-being is paramount.", align='L')
-
 
             pdf_output = BytesIO()
             pdf.output(pdf_output, dest='S')
@@ -307,6 +316,7 @@ elif menu == "Take Test":
 
         pdf_bytes = create_pdf_report(name, place, age, support, score, pred_label, q_values)
         
+        # Use st.download_button for a more reliable download experience
         st.download_button(
             label="📄 Download PDF Report",
             data=pdf_bytes,
@@ -371,7 +381,7 @@ elif menu == "Result Explanation":
 elif menu == "Feedback":
     st.header("We value your feedback 💬")
     st.markdown("Your input helps us improve! Please share your thoughts below.")
-    with st.form("feedback_form"):
+    with st.form("feedback_form", clear_on_submit=True): # Added clear_on_submit for convenience
         name = st.text_input("Your Name", key="feedback_name")
         email = st.text_input("Your Email (Optional)", key="feedback_email")
         message = st.text_area("Your Feedback", key="feedback_message")
@@ -380,12 +390,9 @@ elif menu == "Feedback":
             if not name.strip() or not message.strip():
                 st.error("Please provide your name and feedback message.")
             else:
+                # In a real application, you would send this to a database/email
                 st.success(f"Thank you, {name}, for your feedback! We appreciate it.")
-                # Clear form fields in session state so they reset on rerun
-                st.session_state.feedback_name = ""
-                st.session_state.feedback_email = ""
-                st.session_state.feedback_message = ""
-                st.rerun()
+                # Form will clear automatically due to clear_on_submit=True
 
 # -------- RESOURCES --------
 elif menu == "Resources":
