@@ -475,4 +475,3 @@ elif menu == "🧰 Resources":
 # Add a subtle footer
 st.markdown("<hr style='border:1px solid #002b5c;'>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #777;'>PPD Risk Predictor © 2025. Empowering Maternal Health.</p>", unsafe_allow_html=True)
-```
