@@ -1,82 +1,74 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import plotly.graph_objects as go
-from fpdf import FPDF
-from io import BytesIO
 import os
-import random
-import base64 # <-- Make sure to add this import!
+import base64
+import momly_chatbot
 
-# Import the chatbot functionality from momly_chatbot.py
-# Make sure momly_chatbot.py exists in the same directory!
-
-
-# --- Streamlit Page Configuration ---
-# THIS MUST BE THE VERY FIRST STREAMLIT COMMAND CALLED!
-# Any st.write(), st.sidebar.radio(), st.button() etc. before this will cause the error.
-st.set_page_config(page_title="PPD Predictor & MOMLY", layout="wide")
-
-# --- Configuration Paths ---
+# --- Configuration ---
 MODEL_PATH = "ppd_model_pipeline.pkl"
 ENCODER_PATH = "label_encoder.pkl"
 STYLE_PATH = "style/app_style.css"
-IMAGE_PATH = "images/maternity_care.png"
-RESULTS_CSV_PATH = "data/ppd_results.csv"
-MOMLY_CHARACTER_GIF_PATH = "images/momly_character.gif" 
+LOGO_PATH = "images/momly_character.gif"
+SIDEBAR_BG = "images/background.png"
 
-# Ensure necessary directories exist *before* trying to access files in them
+# Create necessary folders
 os.makedirs("data", exist_ok=True)
 os.makedirs("style", exist_ok=True)
 os.makedirs("images", exist_ok=True)
 
-# --- Load Model and Encoder ---
+# --- Page Config ---
+st.set_page_config(page_title="MOMLY - Postpartum Support", layout="wide")
+
+# --- Load Model & Encoder ---
 @st.cache_resource
 def load_model_and_encoder():
-    """Loads the pre-trained model and label encoder, stopping the app if files are missing."""
     try:
         model = joblib.load(MODEL_PATH)
-        le = joblib.load(ENCODER_PATH)
-        return model, le
-    except FileNotFoundError as e:
-        st.error(f"Required file not found: {e}. Please ensure '{MODEL_PATH}' and '{ENCODER_PATH}' are in the root directory.")
-        st.stop()
+        encoder = joblib.load(ENCODER_PATH)
+        return model, encoder
     except Exception as e:
-        st.error(f"Error loading model or encoder: {e}. Please check your .pkl files and their compatibility.")
+        st.error(f"Error loading model or encoder: {e}")
         st.stop()
 
-model, le = load_model_and_encoder()
+model, encoder = load_model_and_encoder()
 
-# --- Load Custom Styles ---
-def load_custom_style(filepath):
-    """Loads and applies custom CSS styles from a file."""
-    if os.path.exists(filepath):
-        with open(filepath) as f:
+# --- Load Styles ---
+def load_custom_style(path):
+    if os.path.exists(path):
+        with open(path) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    else:
-        st.warning(f"Custom style file not found at {filepath}. Using default Streamlit styles.")
 
-load_custom_style(STYLE_PATH) # This loads your app_style (1).css
+    # Inject sidebar background
+    if os.path.exists(SIDEBAR_BG):
+        sidebar_bg_encoded = base64.b64encode(open(SIDEBAR_BG, "rb").read()).decode()
+        st.markdown(f"""
+            <style>
+                section[data-testid="stSidebar"] {{
+                    background-image: url("data:image/png;base64,{sidebar_bg_encoded}");
+                    background-size: cover;
+                    background-position: center;
+                }}
+            </style>
+        """, unsafe_allow_html=True)
 
-# --- MOMLY Animated Character (Global Logo Placement) ---
-# Moved here to appear as a fixed logo on all pages
-if os.path.exists(MOMLY_CHARACTER_GIF_PATH):
+load_custom_style(STYLE_PATH)
+
+# --- MOMLY Floating Character ---
+if os.path.exists(LOGO_PATH):
     st.markdown(f"""
-    <img src="data:image/gif;base64,{base64.b64encode(open(MOMLY_CHARACTER_GIF_PATH, 'rb').read()).decode()}" class="momly-character">
+        <img src="data:image/gif;base64,{base64.b64encode(open(LOGO_PATH, 'rb').read()).decode()}"
+        class="momly-character-floating">
     """, unsafe_allow_html=True)
-else:
-    st.warning(f"MOMLY character GIF not found at {MOMLY_CHARACTER_GIF_PATH}.")
-# --- End of MOMLY Animated Character Addition ---
 
-# --- Session State Initialization ---
-# Initialize session state variables if they don't exist
+# --- Session Initialization ---
 if "page" not in st.session_state:
     st.session_state.page = "Home"
 
 if "momly_chat" not in st.session_state:
     st.session_state.momly_chat = [("momly", "Hi sweet mama 💖 How are you feeling today?")]
 
-# Sidebar navigation - This will now appear on the right due to CSS
+# --- Navigation ---
 st.session_state.page = st.sidebar.radio(
     "Navigate",
     ["Home", "Take Test", "Result Explanation", "Chat with MOMLY", "Feedback", "Resources"],
@@ -86,4 +78,78 @@ st.session_state.page = st.sidebar.radio(
 
 menu = st.session_state.page
 
-# ... (rest of your app (8).py content remains the same) ...
+# --- Page Logic ---
+
+# --- Home Page ---
+if menu == "Home":
+    st.title("👩‍🍼 Welcome to MOMLY")
+    st.markdown("""
+        **MOMLY** is your gentle companion during postpartum recovery.
+        From emotional check-ins to baby tips — we’re here for you 💗
+    """)
+
+# --- Take Test Page ---
+elif menu == "Take Test":
+    st.header("🧠 Postpartum Depression Self-Assessment")
+    st.info("This test is not a diagnosis. It’s a helpful screening tool 💬")
+
+    # Replace with your actual input questions
+    st.write("Questionnaire coming soon...")
+
+# --- Results Explanation ---
+elif menu == "Result Explanation":
+    st.header("📊 Understanding Your Results")
+    st.write("""
+    Your score helps identify if you're at risk for postpartum depression (PPD).
+    We use a clinically validated model for guidance, not for diagnosis.
+    """)
+
+# --- Chatbot Page ---
+elif menu == "Chat with MOMLY":
+    st.markdown('<div id="momly-chat-container">', unsafe_allow_html=True)
+    st.markdown("<h4>💬 Talk to MOMLY</h4>", unsafe_allow_html=True)
+
+    for sender, msg in st.session_state.momly_chat:
+        bubble_class = "user-bubble" if sender == "user" else "momly-bubble"
+        st.markdown(f'<div class="{bubble_class}">{msg}</div>', unsafe_allow_html=True)
+
+    user_input = st.text_input("Type your message:", key="chat_input")
+    if user_input:
+        st.session_state.momly_chat.append(("user", user_input))
+        reply = momly_chatbot.momly_response(user_input)
+        st.session_state.momly_chat.append(("momly", reply))
+        st.experimental_rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Feedback Page ---
+elif menu == "Feedback":
+    st.header("💬 We'd love your feedback!")
+    st.markdown("Please help us improve MOMLY for future mothers 💝")
+
+    with st.form("feedback_form"):
+        name = st.text_input("Name (optional)")
+        experience = st.radio("How was your experience?", ["Excellent", "Good", "Okay", "Needs Improvement"])
+        comment = st.text_area("Additional comments or suggestions")
+        submitted = st.form_submit_button("Submit")
+
+        if submitted:
+            st.success("Thanks for your feedback, mama 💌")
+
+# --- Resources Page ---
+elif menu == "Resources":
+    st.header("📚 Trusted Resources for Mothers")
+
+    st.markdown("""
+    - [📖 Postpartum Support International](https://www.postpartum.net)
+    - [🍼 WHO Postnatal Care Guidelines](https://www.who.int)
+    - [💡 CDC: Mental Health for Moms](https://www.cdc.gov/reproductivehealth)
+    - [📞 National Helpline (India): 1800-599-0019](https://telemanas.mohfw.gov.in/)
+    - [🌐 Find local counselors & support groups](https://therapyroute.com)
+
+    > MOMLY is here with love — but professional help is always encouraged when needed 💗
+    """)
+
+    st.info("Feel free to explore, read, or ask MOMLY directly!")
+
+
