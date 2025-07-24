@@ -14,30 +14,25 @@ le = joblib.load("label_encoder.pkl")
 # --- Page Configuration ---
 st.set_page_config(page_title="MOMLY - Postpartum Risk Predictor", page_icon="👩‍🍼", layout="wide")
 
-# --- Light Theme Styling ---
+# --- Dark Blue Theme Styling ---
 st.markdown("""
     <style>
         body, .stApp {
-            background-color: #f9f9f9;
-            color: #222222;
+            background-color: #001f3f;
+            color: white;
             font-family: 'Segoe UI', sans-serif;
         }
-        h1, h2, h3, h4 {
-            color: #c94f7c;
+        h1, h2, h3, h4, .stMarkdown, .stTextInput, .stSelectbox, .stSlider, .stRadio {
+            color: white;
         }
         .stButton > button {
             background-color: #c94f7c;
             color: white;
             border-radius: 10px;
         }
-        .stTextInput, .stSelectbox, .stSlider, .stRadio > div {
-            background-color: white;
-            color: #222222;
-            border-radius: 8px;
-            padding: 5px;
-        }
         .risk-tip {
-            background-color: #fff0f5;
+            background-color: #222;
+            color: white;
             padding: 10px;
             border-left: 6px solid #c94f7c;
             border-radius: 5px;
@@ -63,8 +58,8 @@ menu = st.session_state.page
 if menu == "Home":
     st.markdown("""
     <div style="text-align: center; padding: 40px 20px;">
-        <h1>MOMLY - Postpartum Depression Risk Predictor</h1>
-        <h3>Empowering maternal health through compassion and intelligence</h3>
+        <h1 style="color: white;">MOMLY - Postpartum Depression Risk Predictor</h1>
+        <h3 style="color: white;">Empowering maternal health through compassion and intelligence</h3>
         <img src="https://images.unsplash.com/photo-1618374656826-e6c9daeddf3e" width="600" style="margin-top:20px; border-radius:10px;">
     </div>
     """, unsafe_allow_html=True)
@@ -170,9 +165,9 @@ elif menu == "Take Test":
                 "axis": {"range": [0, 3]},
                 "bar": {"color": "deeppink"},
                 "steps": [
-                    {"range": [0, 1], "color": "#d0f0c0"},
-                    {"range": [1, 2], "color": "#ffe699"},
-                    {"range": [2, 3], "color": "#ff9999"}
+                    {"range": [0, 1], "color": "#006400"},
+                    {"range": [1, 2], "color": "#ffd700"},
+                    {"range": [2, 3], "color": "#ff4d4d"}
                 ]
             },
             title={"text": "Predicted Risk Level"}
@@ -189,7 +184,7 @@ elif menu == "Take Test":
         st.subheader("Personalized Tips")
         st.markdown(f"<div class='risk-tip'>{tips.get(pred_label, 'Please consult a professional.')}</div>", unsafe_allow_html=True)
 
-        # PDF Download
+        # --- PDF Generation and Download Fix ---
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -199,7 +194,8 @@ elif menu == "Take Test":
         pdf.cell(200, 10, txt=f"Prediction: {pred_label}", ln=True)
         pdf_buffer = BytesIO()
         pdf.output(pdf_buffer)
-        b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+        pdf_buffer.seek(0)
+        b64_pdf = base64.b64encode(pdf_buffer.read()).decode('utf-8')
         st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="{name}_PPD_Report.pdf">📄 Download PDF Report</a>', unsafe_allow_html=True)
 
         if st.button("Start Over"):
@@ -236,4 +232,3 @@ elif menu == "Resources":
     - [India Mental Health Helpline: 1800-599-0019](https://telemanas.mohfw.gov.in)
     - [Talk to MOMLY](#chat-with-momly)
     """)
-
