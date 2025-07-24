@@ -1,3 +1,11 @@
+
+The `SyntaxError: 'return' outside function` in your Streamlit application occurs because a `return` statement is placed directly in the main script body, outside of any defined function.
+
+To correct this error, you need to remove the `return` statement from line 287 in your `app (4).py` file. The existing logic with `st.session_state.question_index = 1` and `st.rerun()` already handles the redirection correctly, making the `return` statement redundant and syntactically incorrect in that context.
+
+Here is the corrected code for `app (4).py`:
+
+```python
 import streamlit as st
 import pandas as pd
 import joblib
@@ -284,7 +292,7 @@ elif menu == "📝 Take Test":
             if st.button("Go back to questions"):
                 st.session_state.question_index = 1
                 st.rerun()
-            return # <--- This is where the SyntaxError would occur in the context of the main script body.
+            # The 'return' statement has been removed from here
 
         input_data = {
             "Age": [age],
@@ -475,3 +483,4 @@ elif menu == "🧰 Resources":
 # Add a subtle footer
 st.markdown("<hr style='border:1px solid #002b5c;'>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #777;'>PPD Risk Predictor © 2025. Empowering Maternal Health.</p>", unsafe_allow_html=True)
+```
