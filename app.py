@@ -9,8 +9,8 @@ import base64
 # Load model and label encoder
 # Ensure these files are in the same directory or provide correct paths
 try:
-    model = joblib.load("ppd_model_pipeline (1).pkl")
-    le = joblib.load("label_encoder (1).pkl")
+    model = joblib.load("ppd_model_pipeline.pkl")
+    le = joblib.load("label_encoder.pkl")
 except FileNotFoundError:
     st.error("Model or Label Encoder files not found. Please ensure 'ppd_model_pipeline (1).pkl' and 'label_encoder (1).pkl' are in the same directory.")
     st.stop() # Stop execution if files are not found
