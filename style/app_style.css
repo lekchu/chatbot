@@ -1,32 +1,57 @@
-/* App background */
-.stApp {
+/* Import font */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap');
+
+/* Overall style */
+body, .stApp {
     background-color: #003300;
-    font-family: 'Helvetica', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     color: white;
+    transition: background-color 1s ease;
 }
 
-/* Heading and paragraph colors */
-h1, h2, h3, p, label, .css-10trblm {
-    color: white;
+/* Headings */
+h1, h2, h3 {
+    font-weight: 600;
+    color: #fdd;
+}
+
+/* Paragraph and text */
+p, label, .css-10trblm {
+    color: #eee;
+    font-size: 1.05em;
 }
 
 /* Chat bubbles */
 .momly-bubble {
-    background-color: #ffd1dc;
-    color: black;
+    background-color: #ffe6f0;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
     max-width: 80%;
     display: inline-block;
+    animation: fadeIn 0.5s ease-in;
 }
 
 .user-bubble {
-    background-color: #d4fdd3;
-    color: black;
+    background-color: #d9fdd3;
     padding: 12px 16px;
     border-radius: 20px;
     margin: 6px 0;
     max-width: 80%;
+    display: inline-block;
     float: right;
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+/* Buttons */
+button, .stButton > button {
+    background-color: #c94f7c !important;
+    color: white !important;
+    border-radius: 10px !important;
 }
