@@ -10,7 +10,7 @@ import base64 # <-- Make sure to add this import!
 
 # Import the chatbot functionality from momly_chatbot.py
 # Make sure momly_chatbot.py exists in the same directory!
-from momly_chatbot import get_momly_reply, USE_LLM 
+
 
 # --- Streamlit Page Configuration ---
 # THIS MUST BE THE VERY FIRST STREAMLIT COMMAND CALLED!
