@@ -7,6 +7,19 @@ import base64
 from streamlit_chat import message
 import openai
 import os
+from PIL import Image
+import base64
+from io import BytesIO
+
+def get_base64_image(image_path):
+    img = Image.open(image_path)
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode()
+    return encoded
+
+icon_base64 = get_base64_image("WhatsApp Image 2025-07-07 at 8.29.31 PM.jpeg")
+
 
 # Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
