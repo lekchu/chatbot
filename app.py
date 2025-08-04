@@ -250,145 +250,131 @@ def momly_chatbot():
     st.markdown("---")
     st.markdown("<h2 style='color: deeppink;'>💬 Chat with MOMLY</h2>", unsafe_allow_html=True)
 
-    # Daily rotating message
+    # Daily quote
     quotes = [
-        "You're doing better than you think 💛", "You are not alone 💗",
-        "It's okay to cry. You're safe here 💧", "Rest is part of healing 🧸",
-        "Your emotions are valid 🌷", "Gentle moments lead to gentle healing 🦋"
+        "You're doing better than you think 💛", "It's okay to cry. You're safe here 💧",
+        "Rest is part of healing 🧸", "Your emotions are valid 🌷",
+        "You are not alone 💗", "Gentle moments lead to gentle healing 🦋"
     ]
     st.success(f"🌸 *{quotes[datetime.now().day % len(quotes)]}*")
 
     # Reset
     if st.button("🔄 Reset Chat"):
-        for key in ["messages", "last_mood", "followup"]:
-            st.session_state.pop(key, None)
+        for k in ["messages", "current_mood", "recommend_index"]:
+            st.session_state.pop(k, None)
         st.rerun()
 
-    # First message
+    # Initial messages
     if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. How are you feeling today?"}
-        ]
-        st.session_state.last_mood = None
-        st.session_state.followup = None
+        st.session_state.messages = [{"role": "assistant", "content": "Hi 👋 I'm MOMLY. How are you feeling today?"}]
+        st.session_state.current_mood = None
+        st.session_state.recommend_index = 0
 
-    # Show chat bubbles
-    for i, msg in enumerate(st.session_state.messages):
-        bubble_style = (
-            "background-color:#ffc0cb; color:black;" if msg["role"] == "assistant"
-            else "background-color:#ffffff; color:black;"
-        )
-        st.markdown(
-            f"<div style='{bubble_style} padding: 10px; border-radius: 10px; margin:5px 0;'>{msg['content']}</div>",
-            unsafe_allow_html=True
-        )
-
-    # Log interaction
-    def log_interaction(source, mood, msg):
-        with open("mood_log.csv", "a", newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if os.stat("mood_log.csv").st_size == 0:
-                writer.writerow(["Date", "Source", "Mood", "Message"])
-            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), source, mood, msg])
-
-    # Mood logic
-    mood_options = {
-        "sad": {
-            "prompt": "I'm here with you 💗 What would help most right now?",
-            "choices": {
-                "🎵 Soothing Music": "https://www.youtube.com/watch?v=2OEL4P1Rz04",
-                "💬 Comforting Quote": "“This too shall pass. Be gentle with yourself.”",
-                "🤫 Just sit quietly": "That’s okay. Sometimes silence is healing too 💛"
-            }
-        },
+    # Mood options and recommendations
+    mood_data = {
         "tired": {
-            "prompt": "You’ve been doing so much. Want to try one of these?",
-            "choices": {
-                "🌙 Breathing Exercise": "https://www.youtube.com/watch?v=aNXKjGFUlMs",
-                "🎵 Gentle Lullaby": "https://www.youtube.com/watch?v=k2qgadSvNyU",
-                "😴 Just close my eyes": "Rest is not a luxury — it's a need 🤍"
-            }
+            "intro": "You’ve been holding so much. That’s okay 💛 Would you like to try something gentle?",
+            "recommendations": [
+                ("🌬️ Breathing Exercise", "https://www.youtube.com/watch?v=aNXKjGFUlMs"),
+                ("🎵 Gentle Lullaby", "https://www.youtube.com/watch?v=k2qgadSvNyU"),
+                ("🛌 Just Rest a Moment", "Rest is healing. Even a few quiet minutes matter.")
+            ]
+        },
+        "sad": {
+            "intro": "I’m really sorry you're feeling this way 💗 I'm here with you.",
+            "recommendations": [
+                ("💬 Comforting Quote", "“This too shall pass. Be gentle with yourself.”"),
+                ("🎵 Soft Music", "https://www.youtube.com/watch?v=2OEL4P1Rz04"),
+                ("🤗 Just sit silently", "Silence is okay. I'm sitting with you.")
+            ]
         },
         "angry": {
-            "prompt": "That emotion is valid. Would you like to:",
-            "choices": {
-                "📝 Journal Prompt": "Try writing: What triggered this feeling? What would I say to a friend in this moment?",
-                "🎵 Calming Music": "https://www.youtube.com/watch?v=2OEL4P1Rz04",
-                "😤 Just let it out": "Letting go of tension takes courage. You're doing great 🌿"
-            }
-        },
-        "happy": {
-            "prompt": "That’s lovely to hear! How would you like to celebrate?",
-            "choices": {
-                "🎶 Dance music": "https://www.youtube.com/watch?v=ZbZSe6N_BXs",
-                "📝 Write about it": "Write down what made today good. You’ll love reading it later 💌",
-                "😊 Just smile": "Smiling is medicine ✨ Keep it going!"
-            }
+            "intro": "Anger can be exhausting. Let's gently release some of it 💨",
+            "recommendations": [
+                ("📝 Journal Prompt", "Write: What triggered this anger? What does it need from me?"),
+                ("🎵 Calming Track", "https://www.youtube.com/watch?v=1ZYbU82GVz4"),
+                ("😤 Deep Breaths", "Inhale deeply... exhale slowly... you’re safe here.")
+            ]
         },
         "anxious": {
-            "prompt": "I'm here for you. Would any of these help?",
-            "choices": {
-                "🎧 Guided Meditation": "https://www.youtube.com/watch?v=MIr3RsUWrdo",
-                "📖 Reassuring Quote": "“Feelings are just visitors — let them come and go.”",
-                "💆 Sit quietly": "Let’s sit here for a moment. You're safe 🕊️"
-            }
+            "intro": "Anxiety feels like a storm. But storms pass. You're not alone 🕊️",
+            "recommendations": [
+                ("🎧 Guided Meditation", "https://www.youtube.com/watch?v=MIr3RsUWrdo"),
+                ("📖 Soothing Affirmation", "“I am safe. I am doing my best. That is enough.”"),
+                ("🤲 Grounding Exercise", "Look around: name 5 things you see. You're here, now.")
+            ]
+        },
+        "happy": {
+            "intro": "Yay! That’s beautiful to hear 😊 Want to make it last?",
+            "recommendations": [
+                ("🎶 Joyful Music", "https://www.youtube.com/watch?v=ZbZSe6N_BXs"),
+                ("📝 Write what made you smile", "Jot it down — even small wins matter 💖"),
+                ("🕺 Do a little dance", "Move your body to match your mood!")
+            ]
         }
     }
 
-    # Handle follow-up choice
-    if st.session_state.followup:
-        choice = st.radio("Choose one:", list(st.session_state.followup["choices"].keys()), key="followup_choice")
-        st.session_state.messages.append({"role": "user", "content": choice})
-        result = st.session_state.followup["choices"][choice]
-        if result.startswith("http"):
-            st.markdown(f"[🎥 Click here to open]({result})", unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "assistant", "content": "Here's what I found 💖"})
-        else:
-            st.session_state.messages.append({"role": "assistant", "content": result})
-        st.session_state.followup = None
-        st.rerun()
+    # Show messages
+    for i, msg in enumerate(st.session_state.messages):
+        bg = "#ffc0cb" if msg["role"] == "assistant" else "#fff"
+        st.markdown(f"<div style='background-color:{bg}; padding: 10px; border-radius: 10px; margin:5px 0; color:black'>{msg['content']}</div>", unsafe_allow_html=True)
 
-    # Input box
-    user_input = st.chat_input("Type how you're feeling or just say hi...")
-
-    if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        lowered = user_input.lower()
-        mood_detected = None
-
-        for mood in mood_options:
-            if mood in lowered:
-                mood_detected = mood
-                break
-
-        if mood_detected and st.session_state.last_mood != mood_detected:
-            follow = mood_options[mood_detected]
-            st.session_state.messages.append({"role": "assistant", "content": follow["prompt"]})
-            st.session_state.last_mood = mood_detected
-            st.session_state.followup = follow
-            log_interaction("text", mood_detected, follow["prompt"])
-            st.rerun()
-        else:
-            fallback = "Thank you for sharing 💕 I'm here for you. Would you like music or a quote?"
-            st.session_state.messages.append({"role": "assistant", "content": fallback})
-            log_interaction("text", "free", fallback)
-
-    # Mood buttons (tap-to-start)
+    # Mood buttons
     st.markdown("**Or tap how you feel right now:**")
     cols = st.columns(5)
     moods = ["😞 Sad", "😴 Tired", "😡 Angry", "😊 Happy", "😰 Anxious"]
     mood_keys = ["sad", "tired", "angry", "happy", "anxious"]
+
     for i in range(5):
         if cols[i].button(moods[i]):
-            mood_key = mood_keys[i]
-            follow = mood_options[mood_key]
-            if st.session_state.last_mood != mood_key:
+            key = mood_keys[i]
+            if st.session_state.current_mood != key:
+                intro = mood_data[key]["intro"]
                 st.session_state.messages.append({"role": "user", "content": moods[i]})
-                st.session_state.messages.append({"role": "assistant", "content": follow["prompt"]})
-                st.session_state.last_mood = mood_key
-                st.session_state.followup = follow
-                log_interaction("button", mood_key, follow["prompt"])
+                st.session_state.messages.append({"role": "assistant", "content": intro})
+                st.session_state.current_mood = key
+                st.session_state.recommend_index = 0
                 st.rerun()
+
+    # Show recommendation (one at a time)
+    mood = st.session_state.current_mood
+    if mood:
+        index = st.session_state.recommend_index
+        recs = mood_data[mood]["recommendations"]
+        if index < len(recs):
+            title, value = recs[index]
+            st.markdown(f"**{title}**")
+            if value.startswith("http"):
+                st.markdown(f"[👉 Click here to open]({value})", unsafe_allow_html=True)
+            else:
+                st.info(value)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💡 Show another", key=f"next_{index}"):
+                    st.session_state.recommend_index += 1
+                    st.rerun()
+            with col2:
+                if st.button("❌ I'm okay now", key=f"stop_{index}"):
+                    st.session_state.messages.append({"role": "assistant", "content": "Okay, I'm here if you need anything later 💕"})
+                    st.session_state.current_mood = None
+                    st.session_state.recommend_index = 0
+                    st.rerun()
+
+    # Text input
+    user_input = st.chat_input("Want to share anything?")
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        lowered = user_input.lower()
+        for mood_key in mood_data:
+            if mood_key in lowered:
+                st.session_state.messages.append({"role": "assistant", "content": mood_data[mood_key]["intro"]})
+                st.session_state.current_mood = mood_key
+                st.session_state.recommend_index = 0
+                st.rerun()
+        fallback = "Thank you for sharing 💗 I'm always here if you want to explore some options."
+        st.session_state.messages.append({"role": "assistant", "content": fallback})
+
 momly_chatbot()
 
 
