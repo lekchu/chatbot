@@ -20,7 +20,6 @@ def get_base64_image(image_path):
 
 icon_base64 = get_base64_image("background.png")
 
-
 # Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
