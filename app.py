@@ -293,28 +293,35 @@ st.markdown(f"""
     <img id="momly-launcher" src="data:image/jpeg;base64,{Path(icon_path).read_bytes().hex()}" onclick="toggleMomly()" />
     <div id="momly-chat">
 """, unsafe_allow_html=True)
-# Toggle chatbot on click
-if "show_momly" not in st.session_state:
-    st.session_state.show_momly = False
-
-# JS toggle
-st.markdown("""
-<script>
-    function toggleMomly() {{
-        fetch('/_stcore_toggle_momly');
+# Floating MOMLY Icon Button with base64
+st.markdown(f"""
+    <style>
+    .momly-button {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        cursor: pointer;
+        z-index: 9999;
     }}
-</script>
+    </style>
+    <img src="data:image/png;base64,{icon_base64}" class="momly-button" onClick="toggleMOMLY()" />
+    <script>
+        function toggleMOMLY() {{
+            const checkbox = window.parent.document.querySelector('input[data-testid="toggle-momly"]');
+            if (checkbox) {{
+                checkbox.click();
+            }}
+        }}
+    </script>
 """, unsafe_allow_html=True)
 
-# Custom Streamlit endpoint for toggle
-from streamlit.server.server import Server
-from streamlit.runtime.scriptrunner import get_script_run_ctx
-ctx = get_script_run_ctx()
-if ctx:
-    import streamlit.runtime.runtime as runtime
-    @runtime.register_script_run_callback
-    def _stcore_toggle_momly():
-        st.session_state.show_momly = not st.session_state.get("show_momly", False)
+# Hidden checkbox for internal toggle
+st.checkbox("Talk to MOMLY", key="toggle_momly", label_visibility="collapsed")
 
 
 def momly_chatbot():
@@ -459,10 +466,7 @@ def momly_chatbot():
         fallback = "Thank you for sharing that. I'm here with you 🧸"
         st.session_state.messages.append({"role": "assistant", "content": fallback})
 
-if st.session_state.get("show_momly", False):
-    momly_chatbot()
-    st.markdown("</div>", unsafe_allow_html=True)  # close chat div
-
-
-
+if st.session_state.get("toggle_momly"):
+    with st.container():
+        momly_chatbot()
 
