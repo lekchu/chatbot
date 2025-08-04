@@ -389,5 +389,7 @@ def momly_chatbot():
                 st.session_state.followup = follow
                 log_interaction("button", mood_key, follow["prompt"])
                 st.rerun()
+momly_chatbot()
+
 
 
