@@ -241,32 +241,79 @@ elif menu == "🧰 Resources":
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
 
-# ---------------- MOMLY Chatbot ----------------
+import random
+from datetime import datetime
+
 def momly_chatbot():
     st.markdown("---")
     st.subheader("💬 Chat with MOMLY (your mental health friend)")
 
+    # 🌼 Daily rotating comfort message
+    daily_quotes = [
+        "You're doing better than you think. Breathe and be kind to yourself 💛",
+        "You are not alone. You're strong, even on your softest days 🌸",
+        "Your baby is lucky to have you. Rest is healing 🧸",
+        "Taking care of yourself is part of being a good mom 💕",
+        "Every emotion is valid. Cry, smile, nap — it's all okay 🤱"
+    ]
+    today_index = datetime.now().day % len(daily_quotes)
+    st.info(f"🌼 Daily Message: *{daily_quotes[today_index]}*")
+
+    st.markdown("**How are you feeling right now?**")
+
+    # 🌈 Mood buttons
+    col1, col2, col3, col4 = st.columns(4)
+    mood = None
+    with col1:
+        if st.button("😞 Sad"):
+            mood = "sad"
+    with col2:
+        if st.button("😴 Tired"):
+            mood = "tired"
+    with col3:
+        if st.button("😊 Good"):
+            mood = "happy"
+    with col4:
+        if st.button("😡 Stressed"):
+            mood = "stressed"
+
+    # 🎯 Rule-based responses
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm here for you. How are you feeling today?"}
+            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm always here if you want to talk."}
         ]
 
     for i, msg in enumerate(st.session_state.messages):
         message(msg["content"], is_user=(msg["role"] == "user"), key=f"chat_msg_{i}")
 
-    user_input = st.chat_input("Ask MOMLY anything...", key="momly_input")
+    user_input = st.chat_input("Type anything you'd like to share...", key="momly_input")
 
-    if user_input:
+    if mood:
+        predefined = {
+            "sad": "I'm really sorry you're feeling sad. You're not alone. Would you like to write about it?",
+            "tired": "You’re doing so much. Please don’t forget to rest and hydrate. Can I suggest a calming tip?",
+            "happy": "That's beautiful to hear! Keep doing what makes you feel alive 😊",
+            "stressed": "That sounds heavy. Let’s take a deep breath together. You’re doing enough 💖"
+        }
+        st.session_state.messages.append({"role": "assistant", "content": predefined[mood]})
+
+    elif user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=st.session_state.messages
-            ).choices[0].message["content"]
-        except Exception:
-            response = "Oops! I'm having trouble responding right now. Please try again later."
+        text = user_input.lower()
+        if "sad" in text:
+            response = "I'm really sorry you're feeling that way. You're not alone. Want to talk more about it?"
+        elif "tired" in text:
+            response = "Tiredness is a signal from your body to slow down. You deserve rest."
+        elif "angry" in text or "stressed" in text:
+            response = "That's okay. Emotions are part of healing. Take a breath, and be gentle with yourself."
+        elif "happy" in text or "good" in text:
+            response = "That's lovely to hear! Keep holding onto those bright moments 🌷"
+        else:
+            response = "Thank you for sharing that. I'm here, always ready to listen. 💗"
+
         st.session_state.messages.append({"role": "assistant", "content": response})
         message(response, key=f"chat_msg_{len(st.session_state.messages)}")
 
-# 👇 Run MOMLY at bottom of app
+# 👇 Run MOMLY
 momly_chatbot()
+
