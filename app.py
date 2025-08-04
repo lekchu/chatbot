@@ -280,6 +280,29 @@ st.markdown(f"""
     <img id="momly-launcher" src="data:image/jpeg;base64,{Path(icon_path).read_bytes().hex()}" onclick="toggleMomly()" />
     <div id="momly-chat">
 """, unsafe_allow_html=True)
+# Toggle chatbot on click
+if "show_momly" not in st.session_state:
+    st.session_state.show_momly = False
+
+# JS toggle
+st.markdown("""
+<script>
+    function toggleMomly() {{
+        fetch('/_stcore_toggle_momly');
+    }}
+</script>
+""", unsafe_allow_html=True)
+
+# Custom Streamlit endpoint for toggle
+from streamlit.server.server import Server
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+ctx = get_script_run_ctx()
+if ctx:
+    import streamlit.runtime.runtime as runtime
+    @runtime.register_script_run_callback
+    def _stcore_toggle_momly():
+        st.session_state.show_momly = not st.session_state.get("show_momly", False)
+
 
 def momly_chatbot():
     import random
@@ -423,9 +446,10 @@ def momly_chatbot():
         fallback = "Thank you for sharing that. I'm here with you 🧸"
         st.session_state.messages.append({"role": "assistant", "content": fallback})
 
+if st.session_state.get("show_momly", False):
+    momly_chatbot()
+    st.markdown("</div>", unsafe_allow_html=True)  # close chat div
 
-
-momly_chatbot()
 
 
 
