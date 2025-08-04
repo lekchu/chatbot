@@ -5,4 +5,4 @@ plotly
 fpdf
 streamlit-chat
 openai
-scikit-learn
+scikit-learn==1.7.0
