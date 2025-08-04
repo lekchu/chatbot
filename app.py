@@ -8,13 +8,13 @@ from streamlit_chat import message
 import openai
 import os
 
-# Load OpenAI API key securely
+# Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Page config
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Page background & padding
+# UI styling
 def add_page_animation():
     st.markdown("""
     <style>
@@ -46,7 +46,7 @@ enhance_chat_ui()
 model = joblib.load("ppd_model_pipeline.pkl")
 le = joblib.load("label_encoder.pkl")
 
-# Sidebar navigation
+# Navigation
 if "page" not in st.session_state:
     st.session_state.page = "🏠 Home"
 
@@ -72,7 +72,7 @@ if menu == "🏠 Home":
         st.session_state.page = "📝 Take Test"
         st.rerun()
 
-# TEST PAGE
+# TAKE TEST
 elif menu == "📝 Take Test":
     st.header("📝 Questionnaire")
 
@@ -212,7 +212,7 @@ elif menu == "📝 Take Test":
                 st.session_state.pop(key, None)
             st.rerun()
 
-# RESULT EXPLANATION
+# EXPLANATION
 elif menu == "📊 Result Explanation":
     st.header("📊 Understanding Risk Levels")
     st.markdown("""
@@ -240,6 +240,8 @@ elif menu == "🧰 Resources":
     - [🌐 WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
+
+# ---------------- MOMLY Chatbot ----------------
 def momly_chatbot():
     st.markdown("---")
     st.subheader("💬 Chat with MOMLY (your mental health friend)")
@@ -262,8 +264,9 @@ def momly_chatbot():
                 messages=st.session_state.messages
             ).choices[0].message["content"]
         except Exception:
-            response = "Oops! I'm having trouble responding right now. Please check your connection or try again later."
+            response = "Oops! I'm having trouble responding right now. Please try again later."
         st.session_state.messages.append({"role": "assistant", "content": response})
         message(response, key=f"chat_msg_{len(st.session_state.messages)}")
 
-
+# 👇 Run MOMLY at bottom of app
+momly_chatbot()
