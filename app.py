@@ -240,6 +240,47 @@ elif menu == "🧰 Resources":
     - [🌐 WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
+    # MOMLY Floating Icon Toggle
+from pathlib import Path
+
+# Path to uploaded image (this will work on Streamlit Cloud too)
+icon_path = "WhatsApp Image 2025-07-07 at 8.29.31 PM.jpeg"
+
+# Inject custom CSS and JS
+st.markdown(f"""
+    <style>
+    #momly-launcher {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1001;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        border: 2px solid white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        background-color: white;
+        cursor: pointer;
+    }}
+    #momly-chat {{
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        z-index: 1000;
+        width: 370px;
+        max-height: 90vh;
+        overflow-y: auto;
+        background-color: #fff0f5;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        padding: 20px;
+        display: {{'block' if st.session_state.get("show_momly", False) else 'none'}};
+    }}
+    </style>
+    <img id="momly-launcher" src="data:image/jpeg;base64,{Path(icon_path).read_bytes().hex()}" onclick="toggleMomly()" />
+    <div id="momly-chat">
+""", unsafe_allow_html=True)
+
 def momly_chatbot():
     import random
     from datetime import datetime
