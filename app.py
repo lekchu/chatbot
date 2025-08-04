@@ -240,30 +240,6 @@ elif menu == "🧰 Resources":
     - [🌐 WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
-
-# ---------------- MOMLY Chatbot ----------------
-st.markdown("---")
-st.subheader("💬 Chat with MOMLY (your mental health friend)")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm here for you. How are you feeling today?"}]
-
-for msg in st.session_state.messages:
-    message(msg["content"], is_user=(msg["role"] == "user"))
-
-user_input = st.chat_input("Ask MOMLY anything...", key="momly_input")
-
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.messages
-        ).choices[0].message["content"]
-    except Exception:
-        response = "Oops! I'm having trouble responding right now. Please try again later."
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    message(response)
 def momly_chatbot():
     st.markdown("---")
     st.subheader("💬 Chat with MOMLY (your mental health friend)")
@@ -273,8 +249,8 @@ def momly_chatbot():
             {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm here for you. How are you feeling today?"}
         ]
 
-    for msg in st.session_state.messages:
-        message(msg["content"], is_user=(msg["role"] == "user"))
+    for i, msg in enumerate(st.session_state.messages):
+        message(msg["content"], is_user=(msg["role"] == "user"), key=f"chat_msg_{i}")
 
     user_input = st.chat_input("Ask MOMLY anything...", key="momly_input")
 
@@ -288,8 +264,6 @@ def momly_chatbot():
         except Exception:
             response = "Oops! I'm having trouble responding right now. Please check your connection or try again later."
         st.session_state.messages.append({"role": "assistant", "content": response})
-        message(response)
+        message(response, key=f"chat_msg_{len(st.session_state.messages)}")
 
-# 👇 Call chatbot once at the end of app.py
-momly_chatbot()
 
