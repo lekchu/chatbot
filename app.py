@@ -240,7 +240,6 @@ elif menu == "🧰 Resources":
     - [🌐 WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
-
 def momly_chatbot():
     import random
     from datetime import datetime
@@ -374,6 +373,7 @@ def momly_chatbot():
                 st.rerun()
         fallback = "Thank you for sharing 💗 I'm always here if you want to explore some options."
         st.session_state.messages.append({"role": "assistant", "content": fallback})
+
 
 momly_chatbot()
 
