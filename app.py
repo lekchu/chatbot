@@ -14,7 +14,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # Page config
 st.set_page_config(page_title="PPD Risk Predictor", page_icon="🧠", layout="wide")
 
-# Page animation
+# Page background & padding
 def add_page_animation():
     st.markdown("""
     <style>
@@ -128,7 +128,7 @@ elif menu == "📝 Take Test":
 
     if 1 <= idx <= 10:
         q_text, options = q_responses[idx - 1]
-        choice = st.radio(f"{idx}. {q_text}", list(options.keys()), key=f"q{idx}")
+        choice = st.radio(f"{idx}. {q_text}", list(options.keys()), key=f"q_{idx}")
         col1, col2 = st.columns(2)
         if col1.button("⬅️ Back") and idx > 1:
             st.session_state.question_index -= 1
@@ -188,7 +188,6 @@ elif menu == "📝 Take Test":
         st.subheader("💡 Personalized Tips")
         st.markdown(tips.get(pred_label, "Consult a professional immediately."))
 
-        # PDF generation
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
@@ -216,7 +215,6 @@ elif menu == "📝 Take Test":
 # RESULT EXPLANATION
 elif menu == "📊 Result Explanation":
     st.header("📊 Understanding Risk Levels")
-    st.info("These levels are based on the EPDS (Edinburgh Postnatal Depression Scale), a validated 10-question screening tool.")
     st.markdown("""
     | Risk Level | Meaning |
     |------------|---------|
@@ -243,7 +241,7 @@ elif menu == "🧰 Resources":
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
 
-# ------------------ MOMLY Chatbot ------------------
+# ---------------- MOMLY Chatbot ----------------
 st.markdown("---")
 st.subheader("💬 Chat with MOMLY (your mental health friend)")
 
@@ -253,7 +251,7 @@ if "messages" not in st.session_state:
 for msg in st.session_state.messages:
     message(msg["content"], is_user=(msg["role"] == "user"))
 
-user_input = st.chat_input("Ask MOMLY anything...")
+user_input = st.chat_input("Ask MOMLY anything...", key="momly_input")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
