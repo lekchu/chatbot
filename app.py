@@ -18,7 +18,7 @@ def get_base64_image(image_path):
     encoded = base64.b64encode(buffer.getvalue()).decode()
     return encoded
 
-icon_base64 = get_base64_image("WhatsApp Image 2025-07-07 at 8.29.31 PM.jpeg")
+icon_base64 = get_base64_image("background.png")
 
 
 # Load OpenAI key
