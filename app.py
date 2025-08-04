@@ -241,109 +241,147 @@ elif menu == "🧰 Resources":
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
 
-import random
-from datetime import datetime
-import csv
-import os
-
 def momly_chatbot():
+    import random
+    from datetime import datetime
+    import os
+    import csv
+
     st.markdown("---")
     st.markdown("<h2 style='color: deeppink;'>💬 Chat with MOMLY</h2>", unsafe_allow_html=True)
 
-    # 🌼 Daily comfort message (rotates)
+    # 🪷 Daily comfort quote
     quotes = [
-        "You’re doing better than you think 💛",
-        "Rest is part of recovery, not a reward 🧸",
-        "It’s okay to cry. Emotions are healthy 💧",
-        "You’re allowed to ask for help 🤝",
-        "Your baby needs a healthy *you*, not a perfect one 💗"
+        "You're doing better than you think 💛", "You are not alone 💗", "It's okay to cry. You're safe here 💧",
+        "Rest is part of healing 🧸", "Your emotions are valid 🌷", "Gentle moments lead to gentle healing 🦋"
     ]
-    quote_index = datetime.now().day % len(quotes)
-    st.success(f"🌸 *{quotes[quote_index]}*")
+    st.success(f"🌸 *{quotes[datetime.now().day % len(quotes)]}*")
 
-    # 📅 Daily check-in reminder popup
-    if "checkin_done" not in st.session_state or not st.session_state.checkin_done:
-        st.info("👋 Hey mama! How are you feeling today?")
-        st.session_state.checkin_done = True
+    # Reset button
+    if st.button("🔄 Reset Chat"):
+        st.session_state.messages = []
+        st.rerun()
 
-    # 😌 Mood buttons
-    st.markdown("**Choose your mood:**")
-    col1, col2, col3, col4 = st.columns(4)
-    mood = None
-    with col1:
-        if st.button("😞 Sad"):
-            mood = "sad"
-    with col2:
-        if st.button("😴 Tired"):
-            mood = "tired"
-    with col3:
-        if st.button("😊 Good"):
-            mood = "happy"
-    with col4:
-        if st.button("😡 Stressed"):
-            mood = "stressed"
-
-    # 💬 Past messages
+    # Default intro
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm here for you anytime you want to talk."}
+            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. How are you feeling today?"}
         ]
 
-    for i, msg in enumerate(st.session_state.messages):
-        bubble_style = "background-color: pink; color: black; border-radius: 15px; padding: 10px; margin: 5px 0;"
-        if msg["role"] == "user":
-            bubble_style = "background-color: lightgray; color: black; border-radius: 15px; padding: 10px; margin: 5px 0;"
-        st.markdown(f"<div style='{bubble_style}'>{msg['content']}</div>", unsafe_allow_html=True)
+    # 🧠 Smart rules with optional media and reply options
+    conversation_rules = {
+        "sad": {
+            "reply": "I'm really sorry you're feeling sad 💖 Would you like a quote or soft music?",
+            "options": ["Yes, a quote", "Music please", "No thanks"],
+        },
+        "tired": {
+            "reply": "You're doing so much. Want a break suggestion or calming breathing video?",
+            "options": ["Yes please", "Not now"]
+        },
+        "angry": {
+            "reply": "That sounds frustrating. Would a journal prompt or deep breathing help?",
+            "options": ["Give journal prompt", "Suggest breathing"]
+        },
+        "anxious": {
+            "reply": "Anxiety is heavy. Want a guided relaxation or reassurance?",
+            "options": ["Relaxation", "Just reassurance"]
+        },
+        "happy": {
+            "reply": "Yay! So glad to hear 💕 Would you like to celebrate with music or journal it?",
+            "options": ["🎶 Music", "📝 Journal", "I'm okay"]
+        },
+        "cry": {
+            "reply": "Crying is a release, not a weakness. Want a calming quote?",
+            "options": ["Yes please", "No, thank you"]
+        },
+        "music": {
+            "reply": "Here's a calming track 🎧",
+            "media": "https://www.youtube.com/watch?v=2OEL4P1Rz04"
+        },
+        "quote": {
+            "reply": "“You are allowed to be both a masterpiece and a work in progress.” 💗",
+        },
+        "journal": {
+            "reply": "Try writing: *What am I holding in that I need to release today?*",
+        },
+        "breathing": {
+            "reply": "Try this 3-minute guided video 🌬️",
+            "media": "https://www.youtube.com/watch?v=aNXKjGFUlMs"
+        },
+        "relaxation": {
+            "reply": "Try this gentle body scan meditation 🧘",
+            "media": "https://www.youtube.com/watch?v=MIr3RsUWrdo"
+        },
+        "yes": {
+            "reply": "Okay! Here's something gentle 💞",
+            "media": "https://www.youtube.com/watch?v=2OEL4P1Rz04"
+        },
+        "no": {
+            "reply": "Totally fine. I'm here if you need anything else 🤗"
+        },
+        "thank": {
+            "reply": "You're welcome 💕 Anytime you need me, I'm here."
+        },
+    }
 
-    # ✏️ Text input
+    # 🎨 Display past messages
+    for i, msg in enumerate(st.session_state.messages):
+        bubble_color = "#ffc0cb" if msg["role"] == "assistant" else "#eeeeee"
+        st.markdown(
+            f"<div style='background-color:{bubble_color}; padding: 10px; border-radius: 10px; margin:5px 0;'>{msg['content']}</div>",
+            unsafe_allow_html=True
+        )
+
+    # 📩 Input from user
     user_input = st.chat_input("Write something you'd like to share...", key="momly_input")
 
-    # 📊 Save logs
-    def log_mood(source, mood, msg):
-        log_file = "mood_log.csv"
-        write_header = not os.path.exists(log_file)
-        with open(log_file, "a", newline='', encoding='utf-8') as f:
+    # 📊 Log user mood/message
+    def log_interaction(msg_type, mood, response):
+        with open("mood_log.csv", "a", newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            if write_header:
-                writer.writerow(["Date", "Mood", "Source", "Message"])
-            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), mood, source, msg])
+            if os.stat("mood_log.csv").st_size == 0:
+                writer.writerow(["Timestamp", "Type", "Mood", "Response"])
+            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), msg_type, mood, response])
 
-    # 🤖 Button-based comfort response
-    if mood:
-        replies = {
-            "sad": "I'm really sorry you're feeling sad. You're not alone 💖 I'm here for you.",
-            "tired": "Your body and mind deserve rest. Please take a few moments to breathe 🌙",
-            "happy": "That's beautiful! Keep holding onto those bright feelings 😊",
-            "stressed": "It's okay to pause. You're doing enough. Be gentle with yourself 🤗"
-        }
-        response = replies[mood]
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        log_mood("button", mood, response)
-
-    # 🧠 Text-based reply
-    elif user_input:
+    # ✨ Handle replies based on keywords or full match
+    if user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
-        text = user_input.lower()
-        if "sad" in text:
-            mood = "sad"
-            response = "Sadness is a heavy feeling. But you don’t have to carry it alone 💙"
-        elif "tired" in text:
-            mood = "tired"
-            response = "You're allowed to rest. You're doing more than enough 🤱"
-        elif "happy" in text:
-            mood = "happy"
-            response = "Yay! That’s lovely. Keep embracing the joy 💐"
-        elif "angry" in text or "stressed" in text:
-            mood = "stressed"
-            response = "You’re carrying a lot. Please try to be kind to yourself today 💗"
+        text = user_input.strip().lower()
+
+        matched = None
+        for keyword, rule in conversation_rules.items():
+            if keyword in text:
+                matched = rule
+                break
+
+        if matched:
+            response = matched["reply"]
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            log_interaction("text", keyword, response)
+
+            # Option buttons
+            if "options" in matched:
+                selected = st.radio("Choose one:", matched["options"], key=f"opt_{len(st.session_state.messages)}")
+                st.session_state.messages.append({"role": "user", "content": selected})
+                st.rerun()
+
+            # Media suggestion
+            if "media" in matched:
+                st.markdown(f"[👉 Click here to open suggestion 🎵]({matched['media']})")
+
         else:
-            mood = "neutral"
-            response = "Thank you for sharing. I'm always here to listen 🧸"
+            fallback = "Thank you for sharing that 💗 Would you like to listen to soft music or write your thoughts?"
+            st.session_state.messages.append({"role": "assistant", "content": fallback})
+            log_interaction("text", "unknown", fallback)
 
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        log_mood("text", mood, response)
-
-# Run MOMLY at bottom
-momly_chatbot()
-
-
+    # 🔘 Button shortcuts (optional quick moods)
+    st.markdown("**Or tap how you feel right now:**")
+    cols = st.columns(5)
+    moods = ["😞 Sad", "😴 Tired", "😡 Angry", "😊 Happy", "😰 Anxious"]
+    mood_keywords = ["sad", "tired", "angry", "happy", "anxious"]
+    for i in range(5):
+        if cols[i].button(moods[i]):
+            st.session_state.messages.append({"role": "user", "content": moods[i]})
+            st.session_state.messages.append({"role": "assistant", "content": conversation_rules[mood_keywords[i]]["reply"]})
+            log_interaction("button", mood_keywords[i], conversation_rules[mood_keywords[i]]["reply"])
+            st.rerun()
