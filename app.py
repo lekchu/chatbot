@@ -243,25 +243,31 @@ elif menu == "🧰 Resources":
 
 import random
 from datetime import datetime
+import csv
+import os
 
 def momly_chatbot():
     st.markdown("---")
-    st.subheader("💬 Chat with MOMLY (your mental health friend)")
+    st.markdown("<h2 style='color: deeppink;'>💬 Chat with MOMLY</h2>", unsafe_allow_html=True)
 
-    # 🌼 Daily rotating comfort message
-    daily_quotes = [
-        "You're doing better than you think. Breathe and be kind to yourself 💛",
-        "You are not alone. You're strong, even on your softest days 🌸",
-        "Your baby is lucky to have you. Rest is healing 🧸",
-        "Taking care of yourself is part of being a good mom 💕",
-        "Every emotion is valid. Cry, smile, nap — it's all okay 🤱"
+    # 🌼 Daily comfort message (rotates)
+    quotes = [
+        "You’re doing better than you think 💛",
+        "Rest is part of recovery, not a reward 🧸",
+        "It’s okay to cry. Emotions are healthy 💧",
+        "You’re allowed to ask for help 🤝",
+        "Your baby needs a healthy *you*, not a perfect one 💗"
     ]
-    today_index = datetime.now().day % len(daily_quotes)
-    st.info(f"🌼 Daily Message: *{daily_quotes[today_index]}*")
+    quote_index = datetime.now().day % len(quotes)
+    st.success(f"🌸 *{quotes[quote_index]}*")
 
-    st.markdown("**How are you feeling right now?**")
+    # 📅 Daily check-in reminder popup
+    if "checkin_done" not in st.session_state or not st.session_state.checkin_done:
+        st.info("👋 Hey mama! How are you feeling today?")
+        st.session_state.checkin_done = True
 
-    # 🌈 Mood buttons
+    # 😌 Mood buttons
+    st.markdown("**Choose your mood:**")
     col1, col2, col3, col4 = st.columns(4)
     mood = None
     with col1:
@@ -277,43 +283,67 @@ def momly_chatbot():
         if st.button("😡 Stressed"):
             mood = "stressed"
 
-    # 🎯 Rule-based responses
+    # 💬 Past messages
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm always here if you want to talk."}
+            {"role": "assistant", "content": "Hi 👋 I'm MOMLY. I'm here for you anytime you want to talk."}
         ]
 
     for i, msg in enumerate(st.session_state.messages):
-        message(msg["content"], is_user=(msg["role"] == "user"), key=f"chat_msg_{i}")
+        bubble_style = "background-color: pink; color: black; border-radius: 15px; padding: 10px; margin: 5px 0;"
+        if msg["role"] == "user":
+            bubble_style = "background-color: lightgray; color: black; border-radius: 15px; padding: 10px; margin: 5px 0;"
+        st.markdown(f"<div style='{bubble_style}'>{msg['content']}</div>", unsafe_allow_html=True)
 
-    user_input = st.chat_input("Type anything you'd like to share...", key="momly_input")
+    # ✏️ Text input
+    user_input = st.chat_input("Write something you'd like to share...", key="momly_input")
 
+    # 📊 Save logs
+    def log_mood(source, mood, msg):
+        log_file = "mood_log.csv"
+        write_header = not os.path.exists(log_file)
+        with open(log_file, "a", newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(["Date", "Mood", "Source", "Message"])
+            writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), mood, source, msg])
+
+    # 🤖 Button-based comfort response
     if mood:
-        predefined = {
-            "sad": "I'm really sorry you're feeling sad. You're not alone. Would you like to write about it?",
-            "tired": "You’re doing so much. Please don’t forget to rest and hydrate. Can I suggest a calming tip?",
-            "happy": "That's beautiful to hear! Keep doing what makes you feel alive 😊",
-            "stressed": "That sounds heavy. Let’s take a deep breath together. You’re doing enough 💖"
+        replies = {
+            "sad": "I'm really sorry you're feeling sad. You're not alone 💖 I'm here for you.",
+            "tired": "Your body and mind deserve rest. Please take a few moments to breathe 🌙",
+            "happy": "That's beautiful! Keep holding onto those bright feelings 😊",
+            "stressed": "It's okay to pause. You're doing enough. Be gentle with yourself 🤗"
         }
-        st.session_state.messages.append({"role": "assistant", "content": predefined[mood]})
+        response = replies[mood]
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        log_mood("button", mood, response)
 
+    # 🧠 Text-based reply
     elif user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
         text = user_input.lower()
         if "sad" in text:
-            response = "I'm really sorry you're feeling that way. You're not alone. Want to talk more about it?"
+            mood = "sad"
+            response = "Sadness is a heavy feeling. But you don’t have to carry it alone 💙"
         elif "tired" in text:
-            response = "Tiredness is a signal from your body to slow down. You deserve rest."
+            mood = "tired"
+            response = "You're allowed to rest. You're doing more than enough 🤱"
+        elif "happy" in text:
+            mood = "happy"
+            response = "Yay! That’s lovely. Keep embracing the joy 💐"
         elif "angry" in text or "stressed" in text:
-            response = "That's okay. Emotions are part of healing. Take a breath, and be gentle with yourself."
-        elif "happy" in text or "good" in text:
-            response = "That's lovely to hear! Keep holding onto those bright moments 🌷"
+            mood = "stressed"
+            response = "You’re carrying a lot. Please try to be kind to yourself today 💗"
         else:
-            response = "Thank you for sharing that. I'm here, always ready to listen. 💗"
+            mood = "neutral"
+            response = "Thank you for sharing. I'm always here to listen 🧸"
 
         st.session_state.messages.append({"role": "assistant", "content": response})
-        message(response, key=f"chat_msg_{len(st.session_state.messages)}")
+        log_mood("text", mood, response)
 
-# 👇 Run MOMLY
+# Run MOMLY at bottom
 momly_chatbot()
+
 
