@@ -385,3 +385,6 @@ def momly_chatbot():
             st.session_state.messages.append({"role": "assistant", "content": conversation_rules[mood_keywords[i]]["reply"]})
             log_interaction("button", mood_keywords[i], conversation_rules[mood_keywords[i]]["reply"])
             st.rerun()
+# 👇 CALL THE CHATBOT
+momly_chatbot()
+
