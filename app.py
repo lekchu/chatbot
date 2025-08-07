@@ -7,18 +7,6 @@ import base64
 from streamlit_chat import message
 import openai
 import os
-from PIL import Image
-import base64
-from io import BytesIO
-
-def get_base64_image(image_path):
-    img = Image.open(image_path)
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    encoded = base64.b64encode(buffer.getvalue()).decode()
-    return encoded
-
-icon_base64 = get_base64_image("background.png")
 
 # Load OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -252,77 +240,6 @@ elif menu == "🧰 Resources":
     - [🌐 WHO Maternal Mental Health](https://www.who.int/news-room/fact-sheets/detail/mental-health-of-women-during-pregnancy-and-after-childbirth)
     - [📝 Postpartum Support International](https://www.postpartum.net/)
     """)
-    # MOMLY Floating Icon Toggle
-from pathlib import Path
-
-# Path to uploaded image (this will work on Streamlit Cloud too)
-icon_path = "WhatsApp Image 2025-07-07 at 8.29.31 PM.jpeg"
-
-# Inject custom CSS and JS
-st.markdown(f"""
-    <style>
-    #momly-launcher {{
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1001;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        border: 2px solid white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        background-color: white;
-        cursor: pointer;
-    }}
-    #momly-chat {{
-        position: fixed;
-        bottom: 100px;
-        right: 20px;
-        z-index: 1000;
-        width: 370px;
-        max-height: 90vh;
-        overflow-y: auto;
-        background-color: #fff0f5;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        padding: 20px;
-        display: {{'block' if st.session_state.get("show_momly", False) else 'none'}};
-    }}
-    </style>
-    <img id="momly-launcher" src="data:image/jpeg;base64,{Path(icon_path).read_bytes().hex()}" onclick="toggleMomly()" />
-    <div id="momly-chat">
-""", unsafe_allow_html=True)
-# Floating MOMLY Icon Button with base64
-st.markdown(f"""
-    <style>
-    .momly-button {{
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        border: 2px solid white;
-        box-shadow: 0 0 8px rgba(0,0,0,0.3);
-        cursor: pointer;
-        z-index: 9999;
-    }}
-    </style>
-    <img src="data:image/png;base64,{icon_base64}" class="momly-button" onClick="toggleMOMLY()" />
-    <script>
-        function toggleMOMLY() {{
-            const checkbox = window.parent.document.querySelector('input[data-testid="toggle-momly"]');
-            if (checkbox) {{
-                checkbox.click();
-            }}
-        }}
-    </script>
-""", unsafe_allow_html=True)
-
-# Hidden checkbox for internal toggle
-st.checkbox("Talk to MOMLY", key="toggle_momly", label_visibility="collapsed")
-
-
 def momly_chatbot():
     import random
     from datetime import datetime
@@ -465,6 +382,9 @@ def momly_chatbot():
         fallback = "Thank you for sharing that. I'm here with you 🧸"
         st.session_state.messages.append({"role": "assistant", "content": fallback})
 
-if st.session_state.get("toggle_momly"):
-    with st.container():
-        momly_chatbot()
+
+
+momly_chatbot()
+
+
+
